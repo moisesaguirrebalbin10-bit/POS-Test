@@ -1,0 +1,24 @@
+/vendor
+/node_modules
+/backend/vendor
+/frontend/node_modules
+/frontend/dist
+/frontend/.angular
+/release
+/Aplicativo
+.env
+*.log
+.DS_Store
+
+# Laravel local runtime/cache/state (regenerated, not source)
+/backend/database/database.sqlite
+/backend/storage/app/private
+/backend/storage/framework/cache/*
+/backend/storage/framework/sessions/*
+/backend/storage/framework/views/*
+/backend/storage/logs/*
+!/backend/storage/framework/cache/.gitkeep
+!/backend/storage/framework/sessions/.gitkeep
+!/backend/storage/framework/views/.gitkeep
+!/backend/storage/logs/.gitkeep
+/backend/bootstrap/cache/*.php

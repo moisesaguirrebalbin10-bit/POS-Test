@@ -1,0 +1,52 @@
+{
+    "name":  "pos-chifa-desktop",
+    "version":  "1.0.0",
+    "private":  true,
+    "main":  "electron/src/main.js",
+    "scripts":  {
+                    "dev":  "concurrently \"cd backend \u0026\u0026 php artisan serve --host=127.0.0.1 --port=8000\" \"cd frontend \u0026\u0026 npm start\" \"wait-on http://127.0.0.1:4200 \u0026\u0026 node scripts/electron-run.js .\"",
+                    "build":  "cd frontend \u0026\u0026 npm run build",
+                    "build:installer":  "npm run build \u0026\u0026 electron-builder --win nsis",
+                    "electron":  "node scripts/electron-run.js .",
+                    "electron:version":  "node scripts/electron-run.js --version"
+                },
+    "devDependencies":  {
+                            "concurrently":  "^10.0.3",
+                            "electron":  "^42.4.1",
+                            "electron-builder":  "^26.15.3",
+                            "wait-on":  "^9.0.10"
+                        },
+    "build":  {
+                  "appId":  "com.poschifa.desktop",
+                  "productName":  "POS Chifa",
+                  "directories":  {
+                                      "output":  "Aplicativo"
+                                  },
+                  "files":  [
+                                "electron/**/*",
+                                "!electron/icon.ico",
+                                "!electron/Logo_Vendomax.png",
+                                "package.json"
+                            ],
+                  "extraResources":  [
+                                {
+                                    "from":  "backend",
+                                    "to":  "backend",
+                                    "filter":  ["**/*", "!storage/logs/**", "!tests/**", "!.env.example", "!*.md"]
+                                },
+                                {
+                                    "from":  "frontend/dist/pos-chifa",
+                                    "to":  "frontend/dist/pos-chifa"
+                                }
+                            ],
+                  "win":  {
+                              "target":  "nsis",
+                              "icon":  "electron/icon.ico"
+                          },
+                  "nsis":  {
+                               "oneClick":  false,
+                               "allowToChangeInstallationDirectory":  true,
+                               "createDesktopShortcut":  true
+                           }
+              }
+}

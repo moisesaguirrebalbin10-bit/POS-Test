@@ -27,6 +27,8 @@ import { MatIconModule } from '@angular/material/icon';
     </header>
 
     <section class="landing-hero">
+      <div class="landing-hero-bg"></div>
+      <div class="landing-hero-scrim"></div>
       <div class="landing-hero-inner">
         <div class="landing-hero-copy">
           <span class="landing-eyebrow">Software POS para restaurantes</span>
@@ -41,22 +43,6 @@ import { MatIconModule } from '@angular/material/icon';
             <li><mat-icon>check_circle</mat-icon>Web y aplicativo de escritorio</li>
             <li><mat-icon>check_circle</mat-icon>Soporte en español</li>
           </ul>
-        </div>
-        <div class="landing-hero-visual">
-          <div class="mockup-card">
-            <div class="mockup-topbar"><span></span><span></span><span></span></div>
-            <div class="mockup-title">Resumen de hoy</div>
-            <div class="mockup-stats">
-              <div class="mockup-stat"><span class="mockup-stat-label">Ventas</span><span class="mockup-stat-value">S/ 1,248.50</span></div>
-              <div class="mockup-stat"><span class="mockup-stat-label">Pedidos</span><span class="mockup-stat-value">86</span></div>
-              <div class="mockup-stat"><span class="mockup-stat-label">Ticket prom.</span><span class="mockup-stat-value">S/ 14.50</span></div>
-            </div>
-            <div class="mockup-list">
-              <div class="mockup-row"><span>Arroz chaufa especial</span><span>S/ 18.00</span></div>
-              <div class="mockup-row"><span>Wantán frito</span><span>S/ 12.00</span></div>
-              <div class="mockup-row"><span>Inka Kola 1L</span><span>S/ 8.00</span></div>
-            </div>
-          </div>
         </div>
       </div>
     </section>
@@ -159,27 +145,24 @@ import { MatIconModule } from '@angular/material/icon';
     .landing-nav-links a:hover { color: var(--ink); }
     .landing-nav-actions { display: flex; gap: 10px; align-items: center; }
 
-    .landing-hero-inner { max-width: 1180px; margin: 0 auto; padding: 64px 24px 80px; display: grid; grid-template-columns: 1.05fr .95fr; gap: 48px; align-items: center; }
-    .landing-eyebrow { display: inline-block; font-size: 13px; font-weight: 700; color: var(--primary-strong); background: color-mix(in srgb, var(--primary) 12%, transparent); padding: 6px 12px; border-radius: 999px; margin-bottom: 18px; }
-    .landing-hero-copy h1 { font-size: 42px; line-height: 1.12; letter-spacing: -.02em; margin-bottom: 18px; }
-    .landing-hero-copy p { font-size: 16px; line-height: 1.6; color: var(--muted); max-width: 520px; margin-bottom: 26px; }
+    .landing-hero { position: relative; overflow: hidden; aspect-ratio: 1691 / 951; background: #0c1418; }
+    .landing-hero-bg {
+      position: absolute; inset: 0;
+      background: url('/assets/landing/hero-pos.png') center / cover no-repeat;
+    }
+    .landing-hero-scrim {
+      position: absolute; inset: 0;
+      background: linear-gradient(90deg, rgba(8,14,18,.85) 0%, rgba(8,14,18,.72) 30%, rgba(8,14,18,.4) 48%, rgba(8,14,18,.1) 62%, transparent 72%);
+    }
+    .landing-hero-inner { position: relative; z-index: 1; max-width: 1180px; margin: 0 auto; padding: 64px 24px; height: 100%; display: flex; align-items: flex-start; padding-top: 12%; }
+    .landing-hero-copy { max-width: 560px; }
+    .landing-eyebrow { display: inline-block; font-size: 13px; font-weight: 700; color: #fff; background: rgba(255,255,255,.16); padding: 6px 12px; border-radius: 999px; margin-bottom: 18px; }
+    .landing-hero-copy h1 { font-size: 42px; line-height: 1.12; letter-spacing: -.02em; margin-bottom: 18px; color: #fff; }
+    .landing-hero-copy p { font-size: 16px; line-height: 1.6; color: rgba(255,255,255,.78); max-width: 520px; margin-bottom: 26px; }
     .landing-hero-actions { display: flex; gap: 12px; margin-bottom: 28px; flex-wrap: wrap; }
     .landing-trust { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
-    .landing-trust li { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--muted); }
+    .landing-trust li { display: flex; align-items: center; gap: 8px; font-size: 14px; color: rgba(255,255,255,.78); }
     .landing-trust mat-icon { font-size: 18px; width: 18px; height: 18px; color: var(--primary); }
-
-    .landing-hero-visual { display: flex; justify-content: center; }
-    .mockup-card { width: 100%; max-width: 380px; background: var(--surface); border: 1px solid var(--line); border-radius: 18px; box-shadow: var(--shadow); padding: 18px; }
-    .mockup-topbar { display: flex; gap: 6px; margin-bottom: 14px; }
-    .mockup-topbar span { width: 9px; height: 9px; border-radius: 50%; background: var(--line); }
-    .mockup-title { font-size: 13px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 12px; }
-    .mockup-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 16px; }
-    .mockup-stat { background: var(--surface-2); border: 1px solid var(--soft-line); border-radius: 10px; padding: 10px 8px; display: flex; flex-direction: column; gap: 4px; }
-    .mockup-stat-label { font-size: 11px; color: var(--muted); }
-    .mockup-stat-value { font-size: 14px; font-weight: 700; color: var(--ink); }
-    .mockup-list { display: flex; flex-direction: column; gap: 8px; border-top: 1px dashed var(--line); padding-top: 12px; }
-    .mockup-row { display: flex; justify-content: space-between; font-size: 13px; color: var(--ink); }
-    .mockup-row span:last-child { font-weight: 700; color: var(--primary-strong); }
 
     .landing-section-title { text-align: center; font-size: 30px; letter-spacing: -.02em; margin-bottom: 10px; }
     .landing-section-sub { text-align: center; color: var(--muted); font-size: 15px; margin: 0 auto 40px; max-width: 520px; }
@@ -228,7 +211,10 @@ import { MatIconModule } from '@angular/material/icon';
     .landing-footer-bottom { max-width: 1180px; margin: 0 auto; border-top: 1px solid var(--soft-line); padding-top: 20px; font-size: 12px; color: var(--muted); text-align: center; }
 
     @media (max-width: 900px) {
-      .landing-hero-inner { grid-template-columns: 1fr; padding-top: 40px; }
+      .landing-hero { aspect-ratio: auto; min-height: 640px; }
+      .landing-hero-inner { height: auto; padding: 48px 24px 64px; }
+      .landing-hero-copy { max-width: none; }
+      .landing-hero-scrim { background: rgba(8,14,18,.82); }
       .landing-nav-links { display: none; }
       .landing-features-grid, .landing-steps, .landing-plans { grid-template-columns: 1fr; }
       .landing-footer-inner { grid-template-columns: 1fr; }

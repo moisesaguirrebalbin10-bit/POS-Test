@@ -1,0 +1,96 @@
+import { Component, inject } from '@angular/core';
+import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { MatToolbarModule } from '@angular/material/toolbar';
+import { MatSidenavModule } from '@angular/material/sidenav';
+import { MatIconModule } from '@angular/material/icon';
+import { MatButtonModule } from '@angular/material/button';
+import { MatMenuModule } from '@angular/material/menu';
+import { MatBadgeModule } from '@angular/material/badge';
+import { AdminAuthService } from '../core/admin-auth.service';
+import { AdminApiService } from '../core/admin-api.service';
+
+@Component({
+  selector: 'app-admin-shell', standalone: true,
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, MatToolbarModule, MatSidenavModule, MatIconModule, MatButtonModule, MatMenuModule, MatBadgeModule],
+  template: `
+  <mat-sidenav-container class="shell admin-shell">
+    <mat-sidenav mode="side" opened class="nav admin-nav">
+      <div class="brand-box">
+        <div class="brand-logo"><mat-icon>admin_panel_settings</mat-icon></div>
+        <div class="brand-text"><h2>ServiMax</h2><small>Panel Admin</small></div>
+      </div>
+      @for (item of visibleMenu(); track item.path) { <a class="nav-link" [routerLink]="item.path" routerLinkActive="active-link"><mat-icon>{{item.icon}}</mat-icon><span>{{item.label}}</span></a> }
+    </mat-sidenav>
+    <mat-sidenav-content>
+      <mat-toolbar>
+        <span>{{admin?.name || 'Admin'}}</span>
+        <span class="spacer"></span>
+        <button mat-icon-button [matMenuTriggerFor]="notifMenu" [matBadge]="unreadCount || null" matBadgeColor="warn" matBadgeSize="small" (click)="loadNotifications()">
+          <mat-icon>notifications</mat-icon>
+        </button>
+        <mat-menu #notifMenu="matMenu" class="notif-menu">
+          @if (!notifications.length) { <div class="notif-empty">Sin notificaciones.</div> }
+          @for (n of notifications; track n.id) {
+            <button mat-menu-item (click)="markRead(n)" [class.unread]="!n.read_at">
+              <div class="notif-item"><strong>{{n.title}}</strong><small>{{n.message}}</small></div>
+            </button>
+          }
+        </mat-menu>
+        <button mat-icon-button (click)="logout()" title="Salir"><mat-icon>logout</mat-icon></button>
+      </mat-toolbar>
+      <main><router-outlet /></main>
+    </mat-sidenav-content>
+  </mat-sidenav-container>`,
+  styles: [`
+    .admin-nav { background: #111827; }
+    .admin-nav .brand-text h2, .admin-nav .brand-text small { color: #fff; }
+    .admin-nav .nav-link {
+      display: flex; align-items: center; gap: 12px;
+      margin: 2px 8px; padding: 10px 16px; border-radius: 8px;
+      color: #e2e8f0; text-decoration: none; font-size: 14px;
+      transition: background .15s, color .15s;
+    }
+    .admin-nav .nav-link mat-icon { color: #94a3b8; transition: color .15s; }
+    .admin-nav .nav-link:hover { background: rgba(255, 255, 255, 0.1); color: #fff; }
+    .admin-nav .nav-link:hover mat-icon { color: #fff; }
+    .admin-nav .nav-link.active-link { background: #1e293b; color: #fff; font-weight: 600; }
+    .admin-nav .nav-link.active-link mat-icon { color: #22c55e; }
+    .notif-menu { max-width: 320px; }
+    .notif-empty { padding: 16px; color: var(--muted); font-size: 13px; }
+    .notif-item { display: flex; flex-direction: column; gap: 2px; padding: 4px 0; white-space: normal; }
+    .notif-item small { color: var(--muted); }
+  `]
+})
+export class AdminShellComponent {
+  auth = inject(AdminAuthService); router = inject(Router); admin = this.auth.admin(); api = inject(AdminApiService);
+  unreadCount = 0;
+  notifications: any[] = [];
+
+  menu = [
+    { path: '/admin/dashboard', icon: 'dashboard', label: 'Dashboard' },
+    { path: '/admin/companies', icon: 'business', label: 'Empresas' },
+    { path: '/admin/plans', icon: 'sell', label: 'Planes' },
+    { path: '/admin/payments', icon: 'payments', label: 'Pagos' },
+    { path: '/admin/logs', icon: 'history', label: 'Registros' },
+    { path: '/admin/staff', icon: 'group', label: 'Staff', permission: 'staff.manage' },
+    { path: '/admin/staff-roles', icon: 'shield', label: 'Roles Staff', permission: 'staff.manage' },
+  ];
+
+  constructor() { this.loadNotifications(); }
+
+  visibleMenu() { return this.menu.filter(item => !item.permission || this.auth.hasPermission(item.permission)); }
+
+  loadNotifications() {
+    this.api.get<any>('notifications').subscribe(res => {
+      this.unreadCount = res.unread_count;
+      this.notifications = res.notifications;
+    });
+  }
+
+  markRead(notification: any) {
+    if (notification.read_at) return;
+    this.api.post(`notifications/${notification.id}/read`, {}).subscribe(() => this.loadNotifications());
+  }
+
+  logout() { this.auth.logout(); }
+}

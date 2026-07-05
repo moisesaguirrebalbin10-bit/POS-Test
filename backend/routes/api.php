@@ -7,20 +7,29 @@ use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\CompanySettingController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\ExpenseIncomeController;
+use App\Http\Controllers\Api\LicenseController;
 use App\Http\Controllers\Api\ProductController;
+use App\Http\Controllers\Api\RegisterController;
 use App\Http\Controllers\Api\ReportController;
 use App\Http\Controllers\Api\RoleController;
 use App\Http\Controllers\Api\SaleController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\WarehouseController;
+use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\Route;
 
-Route::post('/login', [AuthController::class, 'login']);
-Route::get('/branding', [CompanySettingController::class, 'branding']);
+require __DIR__ . '/channels.php';
+require __DIR__ . '/admin.php';
+Broadcast::routes(['middleware' => ['auth:sanctum', 'tenant']]);
 
-Route::middleware('auth:sanctum')->group(function () {
+Route::post('/login', [AuthController::class, 'login']);
+Route::post('/register-company', [RegisterController::class, 'store']);
+Route::post('/license/check', [LicenseController::class, 'check'])->middleware('throttle:30,1');
+
+Route::middleware(['auth:sanctum', 'tenant'])->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me', [AuthController::class, 'me']);
+    Route::get('/branding', [CompanySettingController::class, 'branding']);
 
     Route::get('/dashboard', DashboardController::class)->middleware('permission:dashboard.view');
     Route::get('/dashboard/trends', [DashboardController::class, 'trends'])->middleware('permission:dashboard.view');

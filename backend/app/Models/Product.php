@@ -2,13 +2,16 @@
 
 namespace App\Models;
 
+use App\Events\LowStockAlert;
+use App\Events\StockUpdated;
+use App\Models\Concerns\BelongsToCompany;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Product extends Model
 {
-    use SoftDeletes;
+    use BelongsToCompany, SoftDeletes;
 
     protected $fillable = [
         'sku', 'name', 'category_id', 'warehouse_id', 'sale_price', 'cost',
@@ -22,6 +25,21 @@ class Product extends Model
         'min_stock' => 'decimal:3',
         'active' => 'boolean',
     ];
+
+    protected static function booted(): void
+    {
+        static::updated(function (Product $product) {
+            if (!$product->wasChanged('stock')) {
+                return;
+            }
+
+            broadcast(new StockUpdated($product))->toOthers();
+
+            if ($product->stock <= $product->min_stock) {
+                broadcast(new LowStockAlert($product))->toOthers();
+            }
+        });
+    }
 
     public function category(): BelongsTo
     {

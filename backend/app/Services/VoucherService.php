@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Models\CompanySetting;
 use App\Models\VoucherSequence;
 use Illuminate\Support\Facades\DB;
 
@@ -11,7 +10,7 @@ class VoucherService
     public function next(): string
     {
         return DB::transaction(function () {
-            $settings = CompanySetting::firstOrFail();
+            $settings = app('currentCompany');
             $sequence = VoucherSequence::where('series', $settings->voucher_series)->lockForUpdate()->first();
 
             if (!$sequence) {

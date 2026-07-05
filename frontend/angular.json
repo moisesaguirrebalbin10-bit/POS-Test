@@ -17,7 +17,7 @@
             "tsConfig": "tsconfig.app.json",
             "styles": ["src/styles.css"],
             "assets": ["src/assets"],
-            "allowedCommonJsDependencies": ["html2canvas", "canvg", "raf", "rgbcolor", "core-js"]
+            "allowedCommonJsDependencies": ["html2canvas", "canvg", "raf", "rgbcolor", "core-js", "pusher-js"]
           },
           "configurations": {
             "production": { "optimization": true, "extractLicenses": true, "sourceMap": false }

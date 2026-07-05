@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\CompanySetting;
 use App\Models\VoucherSequence;
 use App\Services\ActivityLogger;
 use Illuminate\Http\Request;
@@ -13,19 +12,19 @@ class CompanySettingController extends Controller
 {
     public function show()
     {
-        return CompanySetting::firstOrCreate([]);
+        return app('currentCompany');
     }
 
     public function branding()
     {
-        $settings = CompanySetting::firstOrCreate([]);
+        $company = app('currentCompany');
 
-        return ['name' => $settings->name, 'slogan' => $settings->slogan, 'logo_path' => $settings->logo_path];
+        return ['name' => $company->name, 'slogan' => $company->slogan, 'logo_path' => $company->logo_path];
     }
 
     public function update(Request $request)
     {
-        $settings = CompanySetting::firstOrCreate([]);
+        $company = app('currentCompany');
         $data = $request->validate([
             'name' => ['required'], 'ruc' => ['nullable'], 'phone' => ['nullable'],
             'address' => ['nullable'], 'slogan' => ['nullable'], 'logo_path' => ['nullable'],
@@ -33,10 +32,10 @@ class CompanySettingController extends Controller
             'default_tip' => ['numeric', 'min:0'], 'voucher_series' => ['required'],
             'voucher_start_number' => ['required', 'integer', 'min:1'], 'ticket_width' => ['in:58,80'],
         ]);
-        $settings->update($data);
-        VoucherSequence::firstOrCreate(['series' => $settings->voucher_series], ['current_number' => $settings->voucher_start_number - 1]);
+        $company->update($data);
+        VoucherSequence::firstOrCreate(['company_id' => $company->id, 'series' => $company->voucher_series], ['current_number' => $company->voucher_start_number - 1]);
         ActivityLogger::log($request->user(), 'company-settings', 'update', 'Edito la configuracion de la empresa / sistema.');
-        return $settings->fresh();
+        return $company->fresh();
     }
 
     public function uploadLogo(Request $request)

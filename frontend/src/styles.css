@@ -85,12 +85,6 @@ mat-card {
 }
 mat-form-field { width: 100%; min-width: 0; }
 
-.login { min-height: 100vh; display: grid; place-items: center; background: #eef3f1; }
-.login mat-card { width: min(380px, 92vw); }
-.login-brand { margin-bottom: 18px; }
-.login-brand .brand-box { height: 220px; }
-.login-brand h1 { margin: 0; text-align: center; }
-
 .brand-box {
   display: flex;
   flex-direction: column;
@@ -468,6 +462,7 @@ pre { white-space: pre-wrap; margin: 0; font-size: 12px; }
   border-bottom: 1px solid var(--soft-line);
   background: #fff;
 }
+.data-row > span { min-width: 0; overflow-wrap: anywhere; }
 .data-row:last-child { border-bottom: 0; }
 .table-head {
   min-height: 44px;
@@ -650,6 +645,58 @@ pre { white-space: pre-wrap; margin: 0; font-size: 12px; }
   background: var(--primary) !important;
   color: #fff !important;
 }
+.user-menu-trigger {
+  height: 44px;
+  padding: 4px 10px 4px 4px !important;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--ink);
+  text-transform: none;
+}
+.user-menu-trigger .user-menu-content {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+.user-menu-trigger .user-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: #fff;
+}
+.user-menu-trigger .user-avatar mat-icon { font-size: 18px; width: 18px; height: 18px; }
+.user-menu-trigger .user-name { font-size: 14px; font-weight: 600; max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.user-menu-trigger .chevron { color: var(--muted); margin-left: -2px; }
+.user-menu-panel .user-menu-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  cursor: default;
+}
+.user-menu-panel .user-menu-header .user-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: #fff;
+  flex: none;
+}
+.user-menu-panel .user-menu-info { display: flex; flex-direction: column; min-width: 0; }
+.user-menu-panel .user-menu-info strong { font-size: 14px; color: var(--ink); }
+.user-menu-panel .user-menu-info small { font-size: 12px; color: var(--muted); overflow-wrap: anywhere; }
+html.app-dark .user-menu-trigger { background: var(--surface-2); border-color: var(--line); }
+html.app-dark .user-menu-panel,
+html.app-dark .user-menu-panel .mat-mdc-menu-content { background: var(--surface) !important; }
 .export-choice {
   min-height: 48px;
   border-radius: 8px !important;

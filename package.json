@@ -32,7 +32,11 @@
                                 {
                                     "from":  "backend",
                                     "to":  "backend",
-                                    "filter":  ["**/*", "!storage/logs/**", "!tests/**", "!.env.example", "!*.md"]
+                                    "filter":  ["**/*", "!storage/logs/**", "!tests/**", "!.env", "!.env.example", "!.env.electron", "!*.md"]
+                                },
+                                {
+                                    "from":  "backend/.env.electron",
+                                    "to":  "backend/.env"
                                 },
                                 {
                                     "from":  "frontend/dist/pos-chifa",

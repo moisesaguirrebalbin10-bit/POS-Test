@@ -9,6 +9,7 @@ use App\Models\Warehouse;
 use App\Services\ActivityLogger;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 
 class WarehouseController extends Controller
 {
@@ -19,7 +20,13 @@ class WarehouseController extends Controller
 
     public function store(Request $request)
     {
-        $warehouse = Warehouse::create($request->validate(['name' => ['required', 'unique:warehouses,name'], 'description' => ['nullable'], 'active' => ['boolean']]));
+        $maxWarehouses = app('currentCompany')->plan?->max_warehouses;
+        if ($maxWarehouses !== null && Warehouse::count() >= $maxWarehouses) {
+            $label = $maxWarehouses === 1 ? 'almacen' : 'almacenes';
+            abort(422, "Tu plan permite hasta {$maxWarehouses} {$label}. Actualiza tu plan para agregar mas.");
+        }
+
+        $warehouse = Warehouse::create($request->validate(['name' => ['required', Rule::unique('warehouses', 'name')->where('company_id', app('currentCompanyId'))], 'description' => ['nullable'], 'active' => ['boolean']]));
         ActivityLogger::log($request->user(), 'warehouses', 'create', "Creo el almacen \"{$warehouse->name}\".");
         return response()->json($warehouse, 201);
     }
@@ -31,7 +38,7 @@ class WarehouseController extends Controller
 
     public function update(Request $request, Warehouse $warehouse)
     {
-        $warehouse->update($request->validate(['name' => ['sometimes', 'unique:warehouses,name,' . $warehouse->id], 'description' => ['nullable'], 'active' => ['boolean']]));
+        $warehouse->update($request->validate(['name' => ['sometimes', Rule::unique('warehouses', 'name')->where('company_id', app('currentCompanyId'))->ignore($warehouse->id)], 'description' => ['nullable'], 'active' => ['boolean']]));
         ActivityLogger::log($request->user(), 'warehouses', 'update', "Edito el almacen \"{$warehouse->name}\".");
         return $warehouse;
     }
@@ -46,7 +53,8 @@ class WarehouseController extends Controller
 
     public function transfer(Request $request)
     {
-        $data = $request->validate(['product_id' => ['required', 'exists:products,id'], 'to_warehouse_id' => ['required', 'exists:warehouses,id'], 'quantity' => ['required', 'numeric', 'min:0.001'], 'note' => ['nullable']]);
+        $companyId = app('currentCompanyId');
+        $data = $request->validate(['product_id' => ['required', Rule::exists('products', 'id')->where('company_id', $companyId)], 'to_warehouse_id' => ['required', Rule::exists('warehouses', 'id')->where('company_id', $companyId)], 'quantity' => ['required', 'numeric', 'min:0.001'], 'note' => ['nullable']]);
         return DB::transaction(function () use ($data, $request) {
             $product = Product::lockForUpdate()->findOrFail($data['product_id']);
             abort_if($product->stock < $data['quantity'], 422, 'Stock insuficiente.');

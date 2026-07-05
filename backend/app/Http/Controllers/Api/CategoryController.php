@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Category;
 use App\Services\ActivityLogger;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class CategoryController extends Controller
 {
@@ -16,7 +17,7 @@ class CategoryController extends Controller
 
     public function store(Request $request)
     {
-        $category = Category::create($request->validate(['name' => ['required', 'unique:categories,name'], 'active' => ['boolean']]));
+        $category = Category::create($request->validate(['name' => ['required', Rule::unique('categories', 'name')->where('company_id', app('currentCompanyId'))], 'active' => ['boolean']]));
         ActivityLogger::log($request->user(), 'categories', 'create', "Creo la categoria \"{$category->name}\".");
         return response()->json($category, 201);
     }
@@ -28,7 +29,7 @@ class CategoryController extends Controller
 
     public function update(Request $request, Category $category)
     {
-        $category->update($request->validate(['name' => ['sometimes', 'unique:categories,name,' . $category->id], 'active' => ['boolean']]));
+        $category->update($request->validate(['name' => ['sometimes', Rule::unique('categories', 'name')->where('company_id', app('currentCompanyId'))->ignore($category->id)], 'active' => ['boolean']]));
         ActivityLogger::log($request->user(), 'categories', 'update', "Edito la categoria \"{$category->name}\".");
         return $category;
     }

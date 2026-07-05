@@ -18,6 +18,12 @@ return [
             'unix_socket' => env('DB_SOCKET', ''), 'charset' => env('DB_CHARSET', 'utf8mb4'), 'collation' => env('DB_COLLATION', 'utf8mb4_unicode_ci'),
             'prefix' => '', 'strict' => true, 'engine' => null,
         ],
+        'pgsql' => [
+            'driver' => 'pgsql', 'url' => env('DB_URL'), 'host' => env('DB_HOST', '127.0.0.1'), 'port' => env('DB_PORT', '5432'),
+            'database' => env('DB_DATABASE', 'servimax'), 'username' => env('DB_USERNAME', 'postgres'), 'password' => env('DB_PASSWORD', ''),
+            'charset' => env('DB_CHARSET', 'utf8'), 'prefix' => '', 'prefix_indexes' => true,
+            'search_path' => 'public', 'sslmode' => env('DB_SSLMODE', 'prefer'),
+        ],
     ],
     'migrations' => 'migrations',
     'redis' => ['client' => env('REDIS_CLIENT', 'phpredis'), 'options' => ['cluster' => env('REDIS_CLUSTER', 'redis'), 'prefix' => Str::slug(env('APP_NAME', 'laravel'), '_').'_database_']],

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Services\ActivityLogger;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class UserController extends Controller
 {
@@ -16,12 +17,19 @@ class UserController extends Controller
 
     public function store(Request $request)
     {
+        $maxUsers = app('currentCompany')->plan?->max_users;
+        if ($maxUsers !== null && User::count() >= $maxUsers) {
+            $label = $maxUsers === 1 ? 'usuario' : 'usuarios';
+            abort(422, "Tu plan permite hasta {$maxUsers} {$label}. Actualiza tu plan para agregar mas.");
+        }
+
         $data = $request->validate([
             'name' => ['required', 'string'],
             'email' => ['required', 'email', 'unique:users,email'],
             'password' => ['required', 'min:8'],
             'active' => ['boolean'],
             'roles' => ['array'],
+            'roles.*' => Rule::exists('roles', 'id')->where('company_id', app('currentCompanyId')),
         ]);
         $roles = $data['roles'] ?? [];
         unset($data['roles']);
@@ -44,6 +52,7 @@ class UserController extends Controller
             'password' => ['nullable', 'min:8'],
             'active' => ['boolean'],
             'roles' => ['array'],
+            'roles.*' => Rule::exists('roles', 'id')->where('company_id', app('currentCompanyId')),
         ]);
         $roles = $data['roles'] ?? null;
         unset($data['roles']);

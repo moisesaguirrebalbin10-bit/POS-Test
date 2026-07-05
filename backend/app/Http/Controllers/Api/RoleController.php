@@ -7,6 +7,7 @@ use App\Models\Permission;
 use App\Models\Role;
 use App\Services\ActivityLogger;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class RoleController extends Controller
 {
@@ -17,7 +18,7 @@ class RoleController extends Controller
 
     public function store(Request $request)
     {
-        $data = $request->validate(['name' => ['required', 'unique:roles,name'], 'description' => ['nullable'], 'active' => ['boolean'], 'permissions' => ['array']]);
+        $data = $request->validate(['name' => ['required', Rule::unique('roles', 'name')->where('company_id', app('currentCompanyId'))], 'description' => ['nullable'], 'active' => ['boolean'], 'permissions' => ['array']]);
         $permissions = $data['permissions'] ?? [];
         unset($data['permissions']);
         $role = Role::create($data);
@@ -33,7 +34,7 @@ class RoleController extends Controller
 
     public function update(Request $request, Role $role)
     {
-        $data = $request->validate(['name' => ['sometimes', 'unique:roles,name,' . $role->id], 'description' => ['nullable'], 'active' => ['boolean'], 'permissions' => ['array']]);
+        $data = $request->validate(['name' => ['sometimes', Rule::unique('roles', 'name')->where('company_id', app('currentCompanyId'))->ignore($role->id)], 'description' => ['nullable'], 'active' => ['boolean'], 'permissions' => ['array']]);
         $permissions = $data['permissions'] ?? null;
         unset($data['permissions']);
         $role->update($data);

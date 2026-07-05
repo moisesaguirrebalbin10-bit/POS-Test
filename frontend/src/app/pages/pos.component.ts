@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, OnDestroy, OnInit, inject } from '@angular/core';
 import '../core/electron-window';
 import { CurrencyPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -9,8 +9,10 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { DialogModule } from 'primeng/dialog';
 import { MessageService } from 'primeng/api';
+import { Subscription } from 'rxjs';
 import { ApiService } from '../core/api.service';
 import { BrandingService } from '../core/branding.service';
+import { RealtimeService } from '../core/realtime.service';
 import { VoucherCopy, VoucherPdfService } from '../core/voucher-pdf.service';
 import { PdfPreviewDialogComponent } from '../shared/pdf-preview-dialog.component';
 
@@ -230,11 +232,13 @@ type CartLine = {
     <app-pdf-preview-dialog [visible]="pdfPreviewVisible" [pdfUrl]="pdfPreviewUrl" [title]="pdfPreviewTitle" (visibleChange)="pdfPreviewVisible = $event" (closed)="onPdfPreviewClosed()" />
   </section>`
 })
-export class PosComponent implements OnInit {
+export class PosComponent implements OnInit, OnDestroy {
   api = inject(ApiService); branding = inject(BrandingService);
   cdr = inject(ChangeDetectorRef);
   voucherPdf = inject(VoucherPdfService);
   messages = inject(MessageService);
+  realtime = inject(RealtimeService);
+  private stockSub?: Subscription;
   allProducts: Product[] = [];
   filteredProducts: Product[] = [];
   searchMatches: Product[] = [];
@@ -258,7 +262,21 @@ export class PosComponent implements OnInit {
   pdfPreviewTitle = '';
   private pdfPreviewResolve: (() => void) | null = null;
 
-  ngOnInit() { this.reloadProducts(); this.loadOpenCash(); }
+  ngOnInit() {
+    this.reloadProducts();
+    this.loadOpenCash();
+    this.stockSub = this.realtime.stockUpdated$.subscribe(e => this.applyStockUpdate(e.productId, e.stock));
+  }
+
+  ngOnDestroy() { this.stockSub?.unsubscribe(); }
+
+  applyStockUpdate(productId: number, stock: number) {
+    for (const list of [this.allProducts, this.filteredProducts, this.searchMatches]) {
+      const product = list.find(p => p.id === productId);
+      if (product) product.stock = stock;
+    }
+    this.cdr.detectChanges();
+  }
 
   loadOpenCash() {
     this.api.get<any>('cash-registers').subscribe((r: any) => {

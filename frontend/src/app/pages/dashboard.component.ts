@@ -8,7 +8,9 @@ import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule } from '@angular/material/core';
 import { Chart } from 'chart.js/auto';
 import ApexCharts from 'apexcharts';
+import { Subscription } from 'rxjs';
 import { ApiService } from '../core/api.service';
+import { RealtimeService } from '../core/realtime.service';
 
 type Summary = { low_stock_count: number };
 type Totals = { sales: number; profit: number; orders: number };
@@ -106,6 +108,8 @@ type CategoryOption = { id: number; name: string };
 export class DashboardComponent implements AfterViewInit, OnDestroy {
   api = inject(ApiService);
   cdr = inject(ChangeDetectorRef);
+  realtime = inject(RealtimeService);
+  private saleSub?: Subscription;
   summary: Summary = { low_stock_count: 0 };
   totals: Totals = { sales: 0, profit: 0, orders: 0 };
   changes: Totals = { sales: 0, profit: 0, orders: 0 };
@@ -138,11 +142,14 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
 
     this.themeObserver = new MutationObserver(() => this.renderTrendsChart(this.lastTrendsRows));
     this.themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+
+    this.saleSub = this.realtime.saleCreated$.subscribe(() => this.loadTrends());
   }
 
   ngOnDestroy() {
     this.themeObserver?.disconnect();
     this.trendsChart?.destroy();
+    this.saleSub?.unsubscribe();
   }
 
   setPeriod(range: TrendPeriod) {

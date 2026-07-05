@@ -3,13 +3,13 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\CompanySetting;
 use App\Models\Sale;
 use App\Services\ActivityLogger;
 use App\Services\SaleService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 
 class SaleController extends Controller
 {
@@ -29,7 +29,7 @@ class SaleController extends Controller
             'mixed_payments' => ['nullable', 'array'],
             'tip' => ['nullable', 'numeric', 'min:0'],
             'items' => ['required', 'array', 'min:1'],
-            'items.*.product_id' => ['required', 'exists:products,id'],
+            'items.*.product_id' => ['required', Rule::exists('products', 'id')->where('company_id', app('currentCompanyId'))],
             'items.*.quantity' => ['required', 'numeric', 'min:0.001'],
         ]);
 
@@ -49,7 +49,7 @@ class SaleController extends Controller
         $copy = $data['copy'];
 
         $sale->load('items', 'cashier');
-        $company = CompanySetting::first();
+        $company = app('currentCompany');
         $copyTag = $copy === 'local' ? '*** COPIA - USO INTERNO (COMANDA) ***' : '*** NOTA VENTA ***';
         $paymentLabels = ['cash' => 'EFECTIVO', 'yape' => 'YAPE', 'plin' => 'PLIN', 'card' => 'TARJETA', 'transfer' => 'TRANSFERENCIA', 'mixed' => 'MIXTO'];
 

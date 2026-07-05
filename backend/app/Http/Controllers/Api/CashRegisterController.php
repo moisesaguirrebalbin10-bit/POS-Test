@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Events\CashRegisterStatusChanged;
 use App\Http\Controllers\Controller;
 use App\Models\CashRegister;
 use App\Services\ActivityLogger;
@@ -24,8 +25,10 @@ class CashRegisterController extends Controller
             'user_id' => $request->user()->id,
             'opening_amount' => $data['opening_amount'],
             'opened_at' => now(),
+            'status' => 'open',
         ]);
         ActivityLogger::log($request->user(), 'cash', 'open', "Abrio caja con S/ {$data['opening_amount']}.");
+        broadcast(new CashRegisterStatusChanged($cashRegister, $request->user()->name))->toOthers();
         return response()->json($cashRegister, 201);
     }
 
@@ -58,6 +61,7 @@ class CashRegisterController extends Controller
         ]);
 
         ActivityLogger::log($request->user(), 'cash', 'close', "Cerro caja con S/ {$data['counted_amount']} contado (diferencia: S/ {$cashRegister->difference}).");
+        broadcast(new CashRegisterStatusChanged($cashRegister, $request->user()->name))->toOthers();
 
         return $cashRegister->load('movements');
     }

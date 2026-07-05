@@ -4,6 +4,10 @@ const fs = require('node:fs');
 const fsp = require('node:fs/promises');
 const { spawn } = require('node:child_process');
 const http = require('node:http');
+const { evaluateLicense, activateLicense } = require('./license');
+
+const LICENSE_RECHECK_MS = 6 * 60 * 60 * 1000;
+let licenseRecheckTimer;
 
 const FRONTEND_PORT = 4300;
 const MIME_TYPES = {
@@ -103,6 +107,8 @@ function startFrontendServer(frontendDir) {
 
 async function createWindow() {
   startBackend();
+  evaluateLicense().catch(() => null);
+  startLicenseRecheck();
   await waitForBackend('http://127.0.0.1:8000/api/company-settings').catch(() => null);
 
   session.defaultSession.setPermissionRequestHandler((_webContents, _permission, callback) => callback(false));
@@ -155,6 +161,14 @@ ipcMain.handle('save-printer-config', async (_event, config) => {
   return safeConfig;
 });
 
+ipcMain.handle('get-license-status', async () => evaluateLicense());
+ipcMain.handle('activate-license', async (_event, licenseKey) => activateLicense(licenseKey));
+
+function startLicenseRecheck() {
+  clearInterval(licenseRecheckTimer);
+  licenseRecheckTimer = setInterval(() => { evaluateLicense().catch(() => null); }, LICENSE_RECHECK_MS);
+}
+
 function logCrash(error) {
   try {
     const logPath = path.join(app.getPath('userData'), 'startup-error.log');
@@ -170,6 +184,7 @@ app.whenReady().then(createWindow).catch(error => {
 process.on('uncaughtException', logCrash);
 
 app.on('window-all-closed', () => {
+  clearInterval(licenseRecheckTimer);
   if (backendProcess) backendProcess.kill();
   if (frontendServer) frontendServer.close();
   if (process.platform !== 'darwin') app.quit();

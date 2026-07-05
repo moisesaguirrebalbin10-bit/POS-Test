@@ -7,6 +7,7 @@ use App\Models\Product;
 use App\Services\ActivityLogger;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 
 class ProductController extends Controller
 {
@@ -78,10 +79,11 @@ class ProductController extends Controller
 
     private function validated(Request $request, ?int $id = null): array
     {
+        $companyId = app('currentCompanyId');
         return $request->validate([
-            'sku' => ['required', 'unique:products,sku,' . $id],
-            'name' => ['required'], 'category_id' => ['required', 'exists:categories,id'],
-            'warehouse_id' => ['required', 'exists:warehouses,id'], 'sale_price' => ['required', 'numeric', 'min:0'],
+            'sku' => ['required', Rule::unique('products', 'sku')->where('company_id', $companyId)->ignore($id)],
+            'name' => ['required'], 'category_id' => ['required', Rule::exists('categories', 'id')->where('company_id', $companyId)],
+            'warehouse_id' => ['required', Rule::exists('warehouses', 'id')->where('company_id', $companyId)], 'sale_price' => ['required', 'numeric', 'min:0'],
             'cost' => ['required', 'numeric', 'min:0'], 'stock' => ['required', 'numeric', 'min:0'],
             'min_stock' => ['required', 'numeric', 'min:0'], 'active' => ['boolean'], 'image_path' => ['nullable'],
         ]);

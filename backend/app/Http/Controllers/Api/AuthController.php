@@ -13,12 +13,21 @@ class AuthController extends Controller
     public function login(Request $request)
     {
         $data = $request->validate(['email' => ['required', 'email'], 'password' => ['required']]);
-        $user = User::with('roles.permissions')->where('email', $data['email'])->first();
+        $user = User::with('roles.permissions', 'company')->where('email', $data['email'])->first();
 
         if (!$user || !$user->active || !Hash::check($data['password'], $user->password)) {
             return response()->json(['message' => 'Credenciales invalidas.'], 422);
         }
 
+        if (!$user->company || in_array($user->company->status, ['suspended', 'cancelled'])) {
+            return response()->json(['message' => 'Tu cuenta esta suspendida. Contacta a soporte para reactivarla.'], 403);
+        }
+
+        if ($user->company->isTrialExpired()) {
+            return response()->json(['message' => 'Tu prueba gratuita vencio. Actualiza tu plan para continuar usando el sistema.'], 403);
+        }
+
+        app()->instance('currentCompanyId', $user->company_id);
         ActivityLogger::log($user, 'auth', 'login', "Inicio de sesion de {$user->name}.");
 
         return response()->json([

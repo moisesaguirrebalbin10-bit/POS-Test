@@ -2,9 +2,9 @@
 
 namespace App\Services;
 
+use App\Events\SaleCreated;
 use App\Models\CashMovement;
 use App\Models\CashRegister;
-use App\Models\CompanySetting;
 use App\Models\Product;
 use App\Models\Sale;
 use App\Models\StockMovement;
@@ -19,7 +19,7 @@ class SaleService
     public function create(array $data, int $userId): Sale
     {
         return DB::transaction(function () use ($data, $userId) {
-            $settings = CompanySetting::firstOrFail();
+            $settings = app('currentCompany');
             $subtotal = 0;
             $items = [];
 
@@ -92,7 +92,10 @@ class SaleService
                 ]);
             }
 
-            return $sale->load('items', 'cashier');
+            $sale->load('items', 'cashier');
+            broadcast(new SaleCreated($sale))->toOthers();
+
+            return $sale;
         });
     }
 }

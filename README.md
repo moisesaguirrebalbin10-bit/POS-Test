@@ -1,13 +1,15 @@
-# POS Chifa
+# ServiMax (POS Chifa)
 
-Sistema POS local para restaurante tipo chifa, empaquetable como aplicacion de escritorio Windows con Angular, Laravel, Electron y SQLite local.
+Sistema POS multi-tenant tipo SaaS para restaurantes (chifas), con Angular, Laravel y Electron. Cada empresa registrada tiene sus propios usuarios, roles, productos, ventas y caja, completamente aislados entre si.
 
 ## Arquitectura
 
-- `backend/`: API Laravel 11, autenticacion Sanctum, roles/permisos, ventas, caja, inventario y reportes.
-- `frontend/`: Angular standalone con Material, guards, interceptor, dashboard, POS y modulos administrativos.
+- `backend/`: API Laravel 12, autenticacion Sanctum, multi-tenant (empresas, planes, suscripciones), roles/permisos, ventas, caja, inventario y reportes.
+- `frontend/`: Angular standalone con Material, guards, interceptor, Landing, dashboard, POS y modulos administrativos.
 - `electron/`: shell de escritorio, arranque del backend local, ventana principal e impresion de vouchers.
-- Base de datos recomendada: SQLite local. Para un POS instalable evita depender de MySQL/PostgreSQL en la maquina del cliente, simplifica backups y reduce fallas de instalacion.
+- Base de datos:
+  - **PostgreSQL** para el despliegue SaaS multi-tenant (servidor/nube) — todas las empresas comparten la BD, aisladas por `company_id`.
+  - **SQLite** local para el Aplicativo de Escritorio (Electron): una instalacion = una sola empresa, sin depender de un servidor de BD externo.
 
 ## Requisitos
 
@@ -15,6 +17,7 @@ Sistema POS local para restaurante tipo chifa, empaquetable como aplicacion de e
 - Composer
 - Node.js 20+
 - npm
+- PostgreSQL 14+ (para el despliegue SaaS; el Aplicativo de Escritorio usa SQLite y no lo necesita)
 
 ## Instalacion desarrollo
 
@@ -23,6 +26,8 @@ cd backend
 cp .env.example .env
 composer install
 php artisan key:generate
+# Ajusta DB_HOST/DB_PORT/DB_DATABASE/DB_USERNAME/DB_PASSWORD en .env (PostgreSQL)
+# o descomenta las lineas DB_CONNECTION=sqlite si vas a trabajar en modo Aplicativo de Escritorio
 php artisan migrate --seed
 php artisan serve --host=127.0.0.1 --port=8000
 ```

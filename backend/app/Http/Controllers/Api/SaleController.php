@@ -8,6 +8,7 @@ use App\Services\ActivityLogger;
 use App\Services\SaleService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 
@@ -18,7 +19,40 @@ class SaleController extends Controller
         return Sale::with('items', 'cashier')
             ->when($request->from, fn ($q, $v) => $q->whereDate('created_at', '>=', $v))
             ->when($request->to, fn ($q, $v) => $q->whereDate('created_at', '<=', $v))
-            ->latest()->paginate(30);
+            ->when($request->payment_method, fn ($q, $v) => $q->where('payment_method', $v))
+            ->when($request->search, fn ($q, $s) => $q->where(fn ($w) => $w->where('voucher_number', 'like', "%$s%")
+                ->orWhere('customer_name', 'like', "%$s%")
+                ->orWhere('table_name', 'like', "%$s%")))
+            ->latest()->paginate($request->integer('per_page') ?: 30);
+    }
+
+    public function stats()
+    {
+        $today = now()->toDateString();
+        $yesterday = now()->subDay()->toDateString();
+
+        $todayTotal = (float) Sale::whereDate('created_at', $today)->sum('total');
+        $yesterdayTotal = (float) Sale::whereDate('created_at', $yesterday)->sum('total');
+        $trendPercent = $yesterdayTotal > 0 ? round((($todayTotal - $yesterdayTotal) / $yesterdayTotal) * 100, 1) : null;
+
+        $totalCount = Sale::count();
+        $issuedCount = Sale::whereNotNull('customer_pdf_path')->count();
+        $issuedPercent = $totalCount > 0 ? (int) round(($issuedCount / $totalCount) * 100) : 0;
+        $avgTicket = $totalCount > 0 ? (float) Sale::avg('total') : 0;
+
+        $popular = Sale::select('payment_method', DB::raw('count(*) as c'))
+            ->groupBy('payment_method')->orderByDesc('c')->first();
+        $popularPercent = $popular && $totalCount > 0 ? (int) round(($popular->c / $totalCount) * 100) : 0;
+
+        return [
+            'today_total' => $todayTotal,
+            'trend_percent' => $trendPercent,
+            'vouchers_count' => $totalCount,
+            'issued_percent' => $issuedPercent,
+            'avg_ticket' => round($avgTicket, 2),
+            'popular_method' => $popular?->payment_method,
+            'popular_percent' => $popularPercent,
+        ];
     }
 
     public function store(Request $request, SaleService $service)

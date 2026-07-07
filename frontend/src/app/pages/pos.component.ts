@@ -54,16 +54,16 @@ type CartLine = {
 
     <section class="pos-workspace">
       <div class="catalog-panel">
+        <div class="catalog-head">
+          <div><span class="eyebrow">Punto de Venta</span><h2>Catalogo de Productos</h2><p>Selecciona productos para anadir al carrito de compra.</p></div>
+          <div class="catalog-head-actions">
+            <button type="button" class="filter-btn" (click)="restoreFilters()"><mat-icon>filter_alt_off</mat-icon>Restaurar Filtros</button>
+            <button mat-flat-button class="primary-action" (click)="reloadProducts()"><mat-icon>refresh</mat-icon>Actualizar Stock</button>
+          </div>
+        </div>
+
         <div class="catalog-toolbar smart-search-wrap">
-          <mat-form-field appearance="outline" class="search-field">
-            <mat-label>Multibusqueda por plato, bebida, categoria o SKU</mat-label>
-            <mat-icon matPrefix>search</mat-icon>
-            <input matInput [(ngModel)]="search" (ngModelChange)="applySearch()" (focus)="searchFocused = true" (keydown.escape)="clearSearch()">
-          </mat-form-field>
-          <button mat-flat-button class="refresh-btn" (click)="reloadProducts()">
-            <mat-icon>refresh</mat-icon>
-            Actualizar
-          </button>
+          <div class="search-pill catalog-search"><mat-icon>search</mat-icon><input type="text" placeholder="Buscar plato, bebida o SKU..." [(ngModel)]="search" (ngModelChange)="applySearch()" (focus)="searchFocused = true" (keydown.escape)="clearSearch()"></div>
 
           @if (searchFocused && search.trim() && searchMatches.length) {
             <div class="search-results">
@@ -82,6 +82,13 @@ type CartLine = {
                 </button>
               }
             </div>
+          }
+        </div>
+
+        <div class="category-chip-row">
+          <button type="button" class="category-chip" [class.active]="selectedCategory === 'all'" (click)="selectCategory('all')">Todos</button>
+          @for (cat of categories; track cat) {
+            <button type="button" class="category-chip" [class.active]="selectedCategory === cat" (click)="selectCategory(cat)">{{cat}}</button>
           }
         </div>
 
@@ -163,7 +170,7 @@ type CartLine = {
           </mat-form-field>
           <mat-form-field appearance="outline">
             <mat-label>Propina</mat-label>
-            <input matInput type="number" [(ngModel)]="tip">
+            <input matInput type="number" min="0" [(ngModel)]="tip" (blur)="tip = clampNonNegative(tip)">
           </mat-form-field>
           <div class="paid-with-row">
             <mat-form-field appearance="outline">
@@ -246,6 +253,7 @@ export class PosComponent implements OnInit, OnDestroy {
   currentCash: any = null;
   cashMessage = '';
   search = '';
+  selectedCategory = 'all';
   searchFocused = false;
   loading = false;
   customer = 'Cliente General';
@@ -315,9 +323,18 @@ export class PosComponent implements OnInit, OnDestroy {
     return [];
   }
 
+  get categories(): string[] {
+    const names = new Set(this.allProducts.map(p => p.category?.name).filter((n): n is string => !!n));
+    return Array.from(names).sort((a, b) => a.localeCompare(b));
+  }
+
+  selectCategory(cat: string) { this.selectedCategory = cat; this.applySearch(); }
+  restoreFilters() { this.search = ''; this.selectedCategory = 'all'; this.applySearch(); }
+
   applySearch() {
     const terms = this.search.toLowerCase().trim().split(/\s+/).filter(Boolean);
-    this.filteredProducts = terms.length ? this.allProducts.filter(p => this.matchesTerms(p, terms)) : [...this.allProducts];
+    const byCategory = this.selectedCategory === 'all' ? this.allProducts : this.allProducts.filter(p => p.category?.name === this.selectedCategory);
+    this.filteredProducts = terms.length ? byCategory.filter(p => this.matchesTerms(p, terms)) : [...byCategory];
     this.searchMatches = terms.length ? this.filteredProducts.slice(0, 12) : [];
     this.cdr.detectChanges();
   }
@@ -357,14 +374,16 @@ export class PosComponent implements OnInit, OnDestroy {
   }
 
   number(value: unknown) { return Number(value || 0); }
+  clampNonNegative(value: unknown) { return Math.max(0, this.number(value)); }
 
   imageUrl(path?: string) {
     return this.api.assetUrl(path);
   }
 
-  get subtotal() { return this.cart.reduce((s, l) => s + l.sale_price * l.quantity, 0); }
-  get igv() { return this.subtotal * 0.18; }
-  get total() { return this.subtotal + this.igv + this.number(this.tip); }
+  get grossTotal() { return this.cart.reduce((s, l) => s + l.sale_price * l.quantity, 0); }
+  get subtotal() { return this.grossTotal / 1.18; }
+  get igv() { return this.grossTotal - this.subtotal; }
+  get total() { return this.grossTotal + this.number(this.tip); }
   get change() { return this.number(this.amountReceived) - this.total; }
 
   markFullPayment() { this.amountReceived = Number(this.total.toFixed(2)); }

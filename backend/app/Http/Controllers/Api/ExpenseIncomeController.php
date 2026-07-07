@@ -12,18 +12,76 @@ use Illuminate\Support\Facades\DB;
 
 class ExpenseIncomeController extends Controller
 {
+    private const INCOME_TYPES = ['sale', 'income'];
+
     public function index(Request $request)
     {
         return CashMovement::query()
-            ->when($request->type, fn ($q, $v) => $q->where('type', $v))
+            ->when($request->type === 'income', fn ($q) => $q->whereIn('type', self::INCOME_TYPES))
+            ->when($request->type === 'expense', fn ($q) => $q->where('type', 'expense'))
+            ->when($request->from, fn ($q, $v) => $q->whereDate('created_at', '>=', $v))
+            ->when($request->to, fn ($q, $v) => $q->whereDate('created_at', '<=', $v))
             ->when($request->search, fn ($q, $s) => $q->where(fn ($w) => $w
                 ->where('category', 'like', "%$s%")
                 ->orWhere('description', 'like', "%$s%")
                 ->orWhere('payment_method', 'like', "%$s%")
             ))
             ->latest()
-            ->paginate(30)
+            ->paginate($request->integer('per_page') ?: 30)
             ->through(fn (CashMovement $movement) => $this->presentMovement($movement));
+    }
+
+    public function stats()
+    {
+        $monthStart = now()->startOfMonth();
+        $prevMonthStart = now()->subMonthNoOverflow()->startOfMonth();
+        $prevMonthEnd = now()->subMonthNoOverflow()->endOfMonth();
+
+        $incomeThisMonth = (float) CashMovement::whereIn('type', self::INCOME_TYPES)->where('created_at', '>=', $monthStart)->sum('amount');
+        $incomePrevMonth = (float) CashMovement::whereIn('type', self::INCOME_TYPES)->whereBetween('created_at', [$prevMonthStart, $prevMonthEnd])->sum('amount');
+        $incomeTrend = $incomePrevMonth > 0 ? round((($incomeThisMonth - $incomePrevMonth) / $incomePrevMonth) * 100, 1) : null;
+
+        $expenseThisMonth = (float) CashMovement::where('type', 'expense')->where('created_at', '>=', $monthStart)->sum('amount');
+        $expensePrevMonth = (float) CashMovement::where('type', 'expense')->whereBetween('created_at', [$prevMonthStart, $prevMonthEnd])->sum('amount');
+        $expenseTrend = $expensePrevMonth > 0 ? round((($expenseThisMonth - $expensePrevMonth) / $expensePrevMonth) * 100, 1) : null;
+
+        $openRegister = CashRegister::where('status', 'open')->latest()->first();
+        $cajaActual = 0;
+        $cajaStatus = 'closed';
+        if ($openRegister) {
+            $cashMovements = $openRegister->movements()->where('payment_method', 'cash')->get();
+            $income = $cashMovements->whereIn('type', self::INCOME_TYPES)->sum('amount');
+            $expenses = $cashMovements->where('type', 'expense')->sum('amount');
+            $cajaActual = round((float) $openRegister->opening_amount + $income - $expenses, 2);
+            $cajaStatus = 'open';
+        }
+
+        $weekStart = now()->startOfWeek();
+        $weeklyFlow = [];
+        for ($i = 0; $i < 7; $i++) {
+            $day = $weekStart->copy()->addDays($i);
+            $total = (float) CashMovement::whereDate('created_at', $day)->sum('amount');
+            $weeklyFlow[] = ['day_index' => $i, 'total' => round($total, 2), 'is_weekend' => $day->isWeekend()];
+        }
+
+        $totalMonth = (float) CashMovement::where('created_at', '>=', $monthStart)->sum('amount');
+        $paymentMethods = CashMovement::select('payment_method', DB::raw('sum(amount) as total'))
+            ->where('created_at', '>=', $monthStart)
+            ->groupBy('payment_method')->orderByDesc('total')->get()
+            ->map(fn ($m) => [
+                'method' => $m->payment_method,
+                'total' => (float) $m->total,
+                'percent' => $totalMonth > 0 ? (int) round(($m->total / $totalMonth) * 100) : 0,
+            ]);
+
+        return [
+            'income_total' => round($incomeThisMonth, 2), 'income_trend' => $incomeTrend,
+            'expense_total' => round($expenseThisMonth, 2), 'expense_trend' => $expenseTrend,
+            'balance_net' => round($incomeThisMonth - $expenseThisMonth, 2),
+            'caja_actual' => $cajaActual, 'caja_status' => $cajaStatus,
+            'weekly_flow' => $weeklyFlow,
+            'payment_methods' => $paymentMethods,
+        ];
     }
 
     public function store(Request $request)

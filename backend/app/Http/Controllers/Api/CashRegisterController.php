@@ -6,6 +6,7 @@ use App\Events\CashRegisterStatusChanged;
 use App\Http\Controllers\Controller;
 use App\Models\CashRegister;
 use App\Services\ActivityLogger;
+use App\Support\Broadcaster;
 use Illuminate\Http\Request;
 
 class CashRegisterController extends Controller
@@ -13,6 +14,24 @@ class CashRegisterController extends Controller
     public function index(Request $request)
     {
         return CashRegister::with('movements')->when($request->date, fn ($q, $v) => $q->whereDate('date', $v))->latest()->paginate(20);
+    }
+
+    public function stats(Request $request)
+    {
+        $current = CashRegister::where('user_id', $request->user()->id)->where('status', 'open')->latest()->first();
+        $estimatedBalance = 0;
+        if ($current) {
+            $cashMovements = $current->movements()->where('payment_method', 'cash')->get();
+            $income = $cashMovements->whereIn('type', ['sale', 'income'])->sum('amount');
+            $expenses = $cashMovements->where('type', 'expense')->sum('amount');
+            $estimatedBalance = round((float) $current->opening_amount + $income - $expenses, 2);
+        }
+
+        return [
+            'is_open' => (bool) $current,
+            'current_id' => $current?->id,
+            'estimated_balance' => $estimatedBalance,
+        ];
     }
 
     public function store(Request $request)
@@ -28,7 +47,7 @@ class CashRegisterController extends Controller
             'status' => 'open',
         ]);
         ActivityLogger::log($request->user(), 'cash', 'open', "Abrio caja con S/ {$data['opening_amount']}.");
-        broadcast(new CashRegisterStatusChanged($cashRegister, $request->user()->name))->toOthers();
+        Broadcaster::send(fn () => broadcast(new CashRegisterStatusChanged($cashRegister, $request->user()->name))->toOthers());
         return response()->json($cashRegister, 201);
     }
 
@@ -61,7 +80,7 @@ class CashRegisterController extends Controller
         ]);
 
         ActivityLogger::log($request->user(), 'cash', 'close', "Cerro caja con S/ {$data['counted_amount']} contado (diferencia: S/ {$cashRegister->difference}).");
-        broadcast(new CashRegisterStatusChanged($cashRegister, $request->user()->name))->toOthers();
+        Broadcaster::send(fn () => broadcast(new CashRegisterStatusChanged($cashRegister, $request->user()->name))->toOthers());
 
         return $cashRegister->load('movements');
     }

@@ -8,6 +8,7 @@ use App\Models\CashRegister;
 use App\Models\Product;
 use App\Models\Sale;
 use App\Models\StockMovement;
+use App\Support\Broadcaster;
 use Illuminate\Support\Facades\DB;
 
 class SaleService
@@ -20,7 +21,10 @@ class SaleService
     {
         return DB::transaction(function () use ($data, $userId) {
             $settings = app('currentCompany');
-            $subtotal = 0;
+            // El precio de venta del producto ya incluye el IGV (es el precio final que paga
+            // el cliente), asi que el subtotal/IGV se extraen de ese monto en vez de sumarse
+            // encima de el.
+            $grossTotal = 0;
             $items = [];
 
             foreach ($data['items'] as $line) {
@@ -32,13 +36,15 @@ class SaleService
                 }
 
                 $lineTotal = round($quantity * (float) $product->sale_price, 2);
-                $subtotal += $lineTotal;
+                $grossTotal += $lineTotal;
                 $items[] = compact('product', 'quantity', 'lineTotal');
             }
 
-            $igv = round($subtotal * ((float) $settings->igv_percent / 100), 2);
+            $igvPercent = (float) $settings->igv_percent;
+            $subtotal = round($grossTotal / (1 + $igvPercent / 100), 2);
+            $igv = round($grossTotal - $subtotal, 2);
             $tip = round((float) ($data['tip'] ?? 0), 2);
-            $total = round($subtotal + $igv + $tip, 2);
+            $total = round($grossTotal + $tip, 2);
             $cashRegister = CashRegister::where('status', 'open')->where('user_id', $userId)->latest()->first();
             if (!$cashRegister) {
                 abort(422, 'Debe abrir caja diaria antes de registrar una venta.');
@@ -49,6 +55,7 @@ class SaleService
                 'cash_register_id' => $cashRegister->id,
                 'user_id' => $userId,
                 'customer_name' => $data['customer_name'] ?? 'Cliente General',
+                'table_name' => $data['table_name'] ?? null,
                 'subtotal' => $subtotal,
                 'igv' => $igv,
                 'tip' => $tip,
@@ -93,7 +100,7 @@ class SaleService
             }
 
             $sale->load('items', 'cashier');
-            broadcast(new SaleCreated($sale))->toOthers();
+            Broadcaster::send(fn () => broadcast(new SaleCreated($sale))->toOthers());
 
             return $sale;
         });

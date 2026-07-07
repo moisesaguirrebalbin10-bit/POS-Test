@@ -3,16 +3,52 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Role;
 use App\Models\User;
 use App\Services\ActivityLogger;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 class UserController extends Controller
 {
+    private const DEFAULT_ROLE_NAMES = ['Administrador', 'Cajero', 'Almacen', 'Supervisor'];
+
     public function index(Request $request)
     {
-        return User::with('roles')->when($request->search, fn ($q, $s) => $q->where('name', 'like', "%$s%")->orWhere('email', 'like', "%$s%"))->paginate(20);
+        return User::with('roles')
+            ->when($request->search, fn ($q, $s) => $q->where(fn ($w) => $w->where('name', 'like', "%$s%")
+                ->orWhere('email', 'like', "%$s%")
+                ->orWhereHas('roles', fn ($r) => $r->where('name', 'like', "%$s%"))))
+            ->when($request->status === 'active', fn ($q) => $q->where('active', true))
+            ->when($request->status === 'inactive', fn ($q) => $q->where('active', false))
+            ->paginate($request->integer('per_page') ?: 20);
+    }
+
+    public function stats()
+    {
+        $total = User::count();
+        $monthStart = now()->startOfMonth();
+        $newThisMonth = User::where('created_at', '>=', $monthStart)->count();
+        $priorTotal = $total - $newThisMonth;
+        $trend = $priorTotal > 0 ? round(($newThisMonth / $priorTotal) * 100, 1) : null;
+
+        $active = User::where('active', true)->count();
+        $onlineCount = DB::table('personal_access_tokens')
+            ->where('tokenable_type', User::class)
+            ->whereIn('tokenable_id', User::pluck('id'))
+            ->where('last_used_at', '>=', now()->subMinutes(15))
+            ->distinct('tokenable_id')
+            ->count('tokenable_id');
+
+        $totalRoles = Role::count();
+        $customRoles = Role::whereNotIn('name', self::DEFAULT_ROLE_NAMES)->count();
+
+        return [
+            'total_users' => $total, 'trend_percent' => $trend,
+            'active_users' => $active, 'online_now' => $onlineCount,
+            'total_roles' => $totalRoles, 'custom_roles' => $customRoles,
+        ];
     }
 
     public function store(Request $request)

@@ -12,7 +12,7 @@ class Company extends Model
     protected $fillable = [
         'name', 'slug', 'license_key', 'ruc', 'phone', 'address', 'slogan', 'logo_path',
         'igv_percent', 'tip_enabled', 'default_tip', 'voucher_series', 'voucher_start_number',
-        'ticket_width', 'owner_user_id', 'status', 'trial_ends_at', 'plan_id',
+        'ticket_width', 'owner_user_id', 'status', 'business_type', 'business_type_selected_at', 'trial_ends_at', 'plan_id',
     ];
 
     protected $casts = [
@@ -20,6 +20,7 @@ class Company extends Model
         'tip_enabled' => 'boolean',
         'default_tip' => 'decimal:2',
         'trial_ends_at' => 'datetime',
+        'business_type_selected_at' => 'datetime',
     ];
 
     public function owner(): BelongsTo
@@ -50,6 +51,16 @@ class Company extends Model
     public function isTrialExpired(): bool
     {
         return $this->status === 'trial' && $this->trial_ends_at && $this->trial_ends_at->isPast();
+    }
+
+    public function isRestaurant(): bool
+    {
+        return $this->business_type === 'restaurant';
+    }
+
+    public function needsBusinessTypeOnboarding(): bool
+    {
+        return is_null($this->business_type_selected_at);
     }
 
     public static function generateLicenseKey(): string

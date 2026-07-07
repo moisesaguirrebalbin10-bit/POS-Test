@@ -49,6 +49,7 @@ class TenantProvisioner
             ['reports.export', 'Reportes', 'Exportar reportes'],
             ['logs.view', 'Registros', 'Ver registros de actividad'],
             ['devices.manage', 'Equipos', 'Configurar impresoras'],
+            ['tables.manage', 'Mesas', 'Gestionar mesas y pedidos (modo Restaurante)'],
         ];
     }
 
@@ -83,7 +84,7 @@ class TenantProvisioner
         $supervisor = Role::firstOrCreate(['company_id' => $company->id, 'name' => 'Supervisor'], ['description' => 'Reportes y supervision']);
 
         $admin->permissions()->sync(Permission::pluck('id'));
-        $cashier->permissions()->sync(Permission::whereIn('key', ['dashboard.view', 'products.view', 'sales.view', 'sales.create', 'cash.view', 'cash.open', 'cash.close', 'movements.view', 'movements.create'])->pluck('id'));
+        $cashier->permissions()->sync(Permission::whereIn('key', ['dashboard.view', 'products.view', 'sales.view', 'sales.create', 'cash.view', 'cash.open', 'cash.close', 'movements.view', 'movements.create', 'tables.manage'])->pluck('id'));
         $warehouse->permissions()->sync(Permission::whereIn('key', ['dashboard.view', 'products.view', 'products.create', 'products.update', 'warehouses.view', 'warehouses.update', 'warehouses.transfer'])->pluck('id'));
         $supervisor->permissions()->sync(Permission::whereIn('key', ['dashboard.view', 'reports.view', 'reports.export', 'sales.view', 'products.view', 'cash.view', 'movements.view'])->pluck('id'));
 

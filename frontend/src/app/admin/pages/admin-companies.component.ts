@@ -4,8 +4,6 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
 import { MessageService } from 'primeng/api';
 import { AdminApiService } from '../core/admin-api.service';
 
@@ -13,14 +11,14 @@ const STATUS_LABELS: Record<string, string> = { trial: 'Prueba', active: 'Activa
 
 @Component({
   selector: 'app-admin-companies', standalone: true,
-  imports: [CurrencyPipe, DatePipe, FormsModule, RouterLink, MatIconModule, MatButtonModule, MatFormFieldModule, MatInputModule],
+  imports: [CurrencyPipe, DatePipe, FormsModule, RouterLink, MatIconModule, MatButtonModule],
   template: `
   <section class="admin-page">
     @if (!companyId) {
       <header class="admin-head"><div><span class="eyebrow">Panel Administrativo</span><h1>Empresas</h1><p>Todas las empresas registradas en ServiMax.</p></div></header>
       <div class="admin-panel">
         <div class="admin-toolbar">
-          <mat-form-field appearance="outline" class="admin-search"><mat-label>Buscar</mat-label><input matInput [(ngModel)]="search" (ngModelChange)="load()"></mat-form-field>
+          <div class="search-pill"><mat-icon>search</mat-icon><input type="text" placeholder="Buscar empresas..." [(ngModel)]="search" (ngModelChange)="load()"></div>
         </div>
         @if (loading) { <div class="loading-state"><mat-icon>hourglass_empty</mat-icon><p>Cargando...</p></div> }
         @else {

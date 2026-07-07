@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Events\LowStockAlert;
 use App\Events\StockUpdated;
 use App\Models\Concerns\BelongsToCompany;
+use App\Support\Broadcaster;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -33,10 +34,10 @@ class Product extends Model
                 return;
             }
 
-            broadcast(new StockUpdated($product))->toOthers();
+            Broadcaster::send(fn () => broadcast(new StockUpdated($product))->toOthers());
 
             if ($product->stock <= $product->min_stock) {
-                broadcast(new LowStockAlert($product))->toOthers();
+                Broadcaster::send(fn () => broadcast(new LowStockAlert($product))->toOthers());
             }
         });
     }

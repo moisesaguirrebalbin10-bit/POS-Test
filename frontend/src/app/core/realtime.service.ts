@@ -11,6 +11,9 @@ export type StockUpdatedEvent = { productId: number; name: string; stock: number
 export type LowStockAlertEvent = { productId: number; name: string; stock: number; minStock: number };
 export type SaleCreatedEvent = { voucherNumber: string; total: number; cashierName: string | null };
 export type CashRegisterChangedEvent = { status: string; userName: string };
+export type TableRoundSentEvent = { tableId: number; tableName: string; tableOrderId: number; roundId: number };
+export type TableItemDeliveredEvent = { tableId: number; tableOrderId: number; itemId: number; allDelivered: boolean };
+export type TableFreedEvent = { tableId: number };
 
 @Injectable({ providedIn: 'root' })
 export class RealtimeService {
@@ -21,6 +24,9 @@ export class RealtimeService {
   lowStockAlert$ = new Subject<LowStockAlertEvent>();
   saleCreated$ = new Subject<SaleCreatedEvent>();
   cashRegisterChanged$ = new Subject<CashRegisterChangedEvent>();
+  tableRoundSent$ = new Subject<TableRoundSentEvent>();
+  tableItemDelivered$ = new Subject<TableItemDeliveredEvent>();
+  tableFreed$ = new Subject<TableFreedEvent>();
 
   connect() {
     const user = this.auth.user();
@@ -42,7 +48,10 @@ export class RealtimeService {
       .listen('.stock.updated', (e: any) => this.stockUpdated$.next({ productId: e.productId, name: e.name, stock: e.stock }))
       .listen('.stock.low', (e: any) => this.lowStockAlert$.next({ productId: e.productId, name: e.name, stock: e.stock, minStock: e.minStock }))
       .listen('.sale.created', (e: any) => this.saleCreated$.next({ voucherNumber: e.voucherNumber, total: e.total, cashierName: e.cashierName }))
-      .listen('.cash-register.status-changed', (e: any) => this.cashRegisterChanged$.next({ status: e.status, userName: e.userName }));
+      .listen('.cash-register.status-changed', (e: any) => this.cashRegisterChanged$.next({ status: e.status, userName: e.userName }))
+      .listen('.table.round-sent', (e: any) => this.tableRoundSent$.next({ tableId: e.tableId, tableName: e.tableName, tableOrderId: e.tableOrderId, roundId: e.roundId }))
+      .listen('.table.item-delivered', (e: any) => this.tableItemDelivered$.next({ tableId: e.tableId, tableOrderId: e.tableOrderId, itemId: e.itemId, allDelivered: e.allDelivered }))
+      .listen('.table.freed', (e: any) => this.tableFreed$.next({ tableId: e.tableId }));
   }
 
   disconnect() {

@@ -68,7 +68,7 @@ class RegisterController extends Controller
 
         return response()->json([
             'token' => $user->createToken('pos-chifa')->plainTextToken,
-            'user' => $user->load('roles.permissions'),
+            'user' => $user->load('roles.permissions', 'company'),
             'license_key' => $company->license_key,
         ], 201);
     }

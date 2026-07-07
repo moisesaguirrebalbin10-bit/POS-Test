@@ -13,7 +13,7 @@ class Sale extends Model
     use BelongsToCompany, SoftDeletes;
 
     protected $fillable = [
-        'voucher_number', 'cash_register_id', 'user_id', 'customer_name',
+        'voucher_number', 'cash_register_id', 'user_id', 'customer_name', 'table_name',
         'subtotal', 'igv', 'tip', 'total', 'payment_method', 'mixed_payments',
         'customer_pdf_path', 'local_pdf_path',
     ];

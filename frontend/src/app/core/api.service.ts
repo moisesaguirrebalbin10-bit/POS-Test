@@ -18,6 +18,7 @@ export class ApiService {
 
   post<T>(path: string, body: any) { return this.http.post<T>(`${this.api}/${path}`, body); }
   put<T>(path: string, body: any) { return this.http.put<T>(`${this.api}/${path}`, body); }
+  patch<T>(path: string, body: any = {}) { return this.http.patch<T>(`${this.api}/${path}`, body); }
 
   upload<T>(path: string, file: File, field = 'image') {
     const form = new FormData();

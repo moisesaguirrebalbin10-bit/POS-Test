@@ -41,6 +41,9 @@
 
   <div class="fields-block">
     <table class="row"><tr><td>F. Emision:</td><td class="right">{{ $sale->created_at->format('d/m/Y H:i:s') }}</td></tr></table>
+    @if ($sale->table_name)
+    <table class="row"><tr><td>Mesa:</td><td class="right bold">{{ $sale->table_name }}</td></tr></table>
+    @endif
     <table class="row"><tr><td>Cliente:</td><td class="right">{{ $sale->customer_name }}</td></tr></table>
     <table class="row"><tr><td>Cajero:</td><td class="right">{{ $sale->cashier?->name }}</td></tr></table>
     <table class="row"><tr><td>Pago:</td><td class="right">{{ $paymentLabels[$sale->payment_method] ?? strtoupper($sale->payment_method) }} - S/ {{ number_format($sale->total, 2) }}</td></tr></table>

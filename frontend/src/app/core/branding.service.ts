@@ -9,6 +9,7 @@ export class BrandingService {
   name = signal('POS Chifa');
   slogan = signal('');
   logoPath = signal<string | null>(null);
+  businessType = signal<'market' | 'restaurant'>('market');
 
   load() {
     if (this.loaded) return;
@@ -18,6 +19,7 @@ export class BrandingService {
         this.name.set(settings?.name || 'POS Chifa');
         this.slogan.set(settings?.slogan || '');
         this.logoPath.set(settings?.logo_path || null);
+        this.businessType.set(settings?.business_type === 'restaurant' ? 'restaurant' : 'market');
       },
       error: () => { this.loaded = false; }
     });

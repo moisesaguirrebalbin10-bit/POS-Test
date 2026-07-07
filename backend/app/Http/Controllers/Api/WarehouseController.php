@@ -15,7 +15,16 @@ class WarehouseController extends Controller
 {
     public function index()
     {
-        return Warehouse::withCount('products')->get();
+        return Warehouse::withCount('products')->withSum('products', 'stock')->get();
+    }
+
+    public function stats()
+    {
+        return [
+            'total_warehouses' => Warehouse::count(),
+            'total_stock' => (float) Product::sum('stock'),
+            'movements_today' => StockMovement::whereDate('created_at', now()->toDateString())->count(),
+        ];
     }
 
     public function store(Request $request)

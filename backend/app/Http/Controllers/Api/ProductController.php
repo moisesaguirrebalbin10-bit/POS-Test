@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Category;
 use App\Models\Product;
 use App\Services\ActivityLogger;
 use Illuminate\Http\Request;
@@ -20,7 +21,18 @@ class ProductController extends Controller
             ->when($request->category_id, fn ($q, $v) => $q->where('category_id', $v))
             ->when($request->warehouse_id, fn ($q, $v) => $q->where('warehouse_id', $v))
             ->when($request->low_stock, fn ($q) => $q->whereColumn('stock', '<=', 'min_stock'))
-            ->paginate($request->search ? 60 : 30);
+            ->paginate($request->integer('per_page') ?: ($request->search ? 60 : 30));
+    }
+
+    public function stats()
+    {
+        $categories = Category::withCount('products')->orderByDesc('products_count')->get();
+
+        return [
+            'top_categories' => $categories->take(2)->map(fn ($c) => ['id' => $c->id, 'name' => $c->name, 'count' => $c->products_count])->values(),
+            'low_stock' => Product::whereColumn('stock', '<=', 'min_stock')->count(),
+            'categories_count' => $categories->count(),
+        ];
     }
 
     public function store(Request $request)

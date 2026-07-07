@@ -24,7 +24,8 @@ import { AdminCompaniesComponent } from './admin/pages/admin-companies.component
 import { AdminPlansComponent } from './admin/pages/admin-plans.component';
 import { AdminPaymentsComponent } from './admin/pages/admin-payments.component';
 import { AdminLogsComponent } from './admin/pages/admin-logs.component';
-import { AdminCrudPageComponent } from './admin/pages/admin-crud-page.component';
+import { AdminStaffComponent } from './admin/pages/admin-staff.component';
+import { AdminStaffRolesComponent } from './admin/pages/admin-staff-roles.component';
 
 export const routes: Routes = [
   { path: '', pathMatch: 'full', component: LandingComponent, canActivate: [landingGuard] },
@@ -64,8 +65,8 @@ export const routes: Routes = [
       { path: 'plans', component: AdminPlansComponent },
       { path: 'payments', component: AdminPaymentsComponent },
       { path: 'logs', component: AdminLogsComponent },
-      { path: 'staff', component: AdminCrudPageComponent, data: { title: 'Staff', endpoint: 'staff' } },
-      { path: 'staff-roles', component: AdminCrudPageComponent, data: { title: 'Roles Staff', endpoint: 'staff-roles' } },
+      { path: 'staff', component: AdminStaffComponent },
+      { path: 'staff-roles', component: AdminStaffRolesComponent },
     ]
   },
   { path: '**', redirectTo: '' }

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\PlatformAdmin;
 use App\Models\PlatformPermission;
 use App\Models\PlatformRole;
 use App\Services\PlatformActivityLogger;
@@ -14,6 +15,15 @@ class StaffRoleController extends Controller
     public function index()
     {
         return ['roles' => PlatformRole::with('permissions')->get(), 'permissions' => PlatformPermission::orderBy('module')->get()];
+    }
+
+    public function stats()
+    {
+        return [
+            'total_roles' => PlatformRole::count(),
+            'total_permissions' => PlatformPermission::count(),
+            'staff_linked' => PlatformAdmin::whereHas('roles')->count(),
+        ];
     }
 
     public function store(Request $request)

@@ -15,6 +15,7 @@ class ActivityLogger
             'module' => $module,
             'action' => $action,
             'description' => $description,
+            'ip_address' => request()?->ip(),
         ]);
     }
 }

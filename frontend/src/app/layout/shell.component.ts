@@ -147,7 +147,7 @@ export class ShellComponent implements AfterViewInit {
         this.branding.refresh();
         if (this.user) {
           this.user.company = { ...(this.user.company || {}), business_type: company.business_type, business_type_selected_at: company.business_type_selected_at };
-          localStorage.setItem('user', JSON.stringify(this.user));
+          this.auth.updateUser(this.user);
         }
         this.messages.add({ severity: 'success', summary: 'Listo', detail: businessType === 'restaurant' ? 'Modo Restaurante activado.' : 'Modo Market activado.' });
       },

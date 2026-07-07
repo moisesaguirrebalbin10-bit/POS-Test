@@ -12,7 +12,7 @@ class ActivityLog extends Model
 
     const UPDATED_AT = null;
 
-    protected $fillable = ['user_id', 'user_name', 'module', 'action', 'description'];
+    protected $fillable = ['user_id', 'user_name', 'module', 'action', 'description', 'ip_address'];
 
     public function user(): BelongsTo
     {

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Company;
 use App\Models\Plan;
 use App\Models\PlatformNotification;
+use App\Models\PlatformSetting;
 use App\Models\Subscription;
 use App\Models\User;
 use App\Models\VoucherSequence;
@@ -28,13 +29,15 @@ class RegisterController extends Controller
         ]);
 
         [$user, $company] = DB::transaction(function () use ($data) {
+            $settings = PlatformSetting::current();
             $company = Company::create([
                 'name' => $data['company_name'],
                 'slug' => Str::slug($data['company_name']) . '-' . Str::random(6),
                 'license_key' => Company::generateLicenseKey(),
                 'status' => 'trial',
-                'trial_ends_at' => now()->addDays(14),
+                'trial_ends_at' => now()->addDays($settings->trial_days),
                 'plan_id' => Plan::where('key', 'basico')->value('id'),
+                'igv_percent' => $settings->default_igv_percent,
             ])->fresh();
 
             $roles = TenantProvisioner::provisionDefaultRoles($company);

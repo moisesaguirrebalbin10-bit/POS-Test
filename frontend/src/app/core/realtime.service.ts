@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, inject, signal } from '@angular/core';
 import Echo from 'laravel-echo';
 import Pusher from 'pusher-js';
 import { Subject } from 'rxjs';
@@ -11,14 +11,17 @@ export type StockUpdatedEvent = { productId: number; name: string; stock: number
 export type LowStockAlertEvent = { productId: number; name: string; stock: number; minStock: number };
 export type SaleCreatedEvent = { voucherNumber: string; total: number; cashierName: string | null };
 export type CashRegisterChangedEvent = { status: string; userName: string };
-export type TableRoundSentEvent = { tableId: number; tableName: string; tableOrderId: number; roundId: number };
-export type TableItemDeliveredEvent = { tableId: number; tableOrderId: number; itemId: number; allDelivered: boolean };
+export type TableRoundSentEvent = { tableId: number | null; tableName: string | null; tableOrderId: number; roundId: number; orderType: string };
+export type TableItemDeliveredEvent = { tableId: number | null; tableOrderId: number; itemId: number; allDelivered: boolean };
 export type TableFreedEvent = { tableId: number };
+export type ReservationChangedEvent = { reservationId: number; tableIds: number[]; status: string };
 
 @Injectable({ providedIn: 'root' })
 export class RealtimeService {
   private auth = inject(AuthService);
   private echo: any = null;
+
+  connected = signal(false);
 
   stockUpdated$ = new Subject<StockUpdatedEvent>();
   lowStockAlert$ = new Subject<LowStockAlertEvent>();
@@ -27,6 +30,7 @@ export class RealtimeService {
   tableRoundSent$ = new Subject<TableRoundSentEvent>();
   tableItemDelivered$ = new Subject<TableItemDeliveredEvent>();
   tableFreed$ = new Subject<TableFreedEvent>();
+  reservationChanged$ = new Subject<ReservationChangedEvent>();
 
   connect() {
     const user = this.auth.user();
@@ -49,13 +53,24 @@ export class RealtimeService {
       .listen('.stock.low', (e: any) => this.lowStockAlert$.next({ productId: e.productId, name: e.name, stock: e.stock, minStock: e.minStock }))
       .listen('.sale.created', (e: any) => this.saleCreated$.next({ voucherNumber: e.voucherNumber, total: e.total, cashierName: e.cashierName }))
       .listen('.cash-register.status-changed', (e: any) => this.cashRegisterChanged$.next({ status: e.status, userName: e.userName }))
-      .listen('.table.round-sent', (e: any) => this.tableRoundSent$.next({ tableId: e.tableId, tableName: e.tableName, tableOrderId: e.tableOrderId, roundId: e.roundId }))
+      .listen('.table.round-sent', (e: any) => this.tableRoundSent$.next({ tableId: e.tableId, tableName: e.tableName, tableOrderId: e.tableOrderId, roundId: e.roundId, orderType: e.orderType }))
       .listen('.table.item-delivered', (e: any) => this.tableItemDelivered$.next({ tableId: e.tableId, tableOrderId: e.tableOrderId, itemId: e.itemId, allDelivered: e.allDelivered }))
-      .listen('.table.freed', (e: any) => this.tableFreed$.next({ tableId: e.tableId }));
+      .listen('.table.freed', (e: any) => this.tableFreed$.next({ tableId: e.tableId }))
+      .listen('.reservation.changed', (e: any) => this.reservationChanged$.next({ reservationId: e.reservationId, tableIds: e.tableIds || [], status: e.status }));
+
+    const connection = this.echo.connector?.pusher?.connection;
+    if (connection) {
+      this.connected.set(connection.state === 'connected');
+      connection.bind('connected', () => this.connected.set(true));
+      connection.bind('disconnected', () => this.connected.set(false));
+      connection.bind('unavailable', () => this.connected.set(false));
+      connection.bind('failed', () => this.connected.set(false));
+    }
   }
 
   disconnect() {
     this.echo?.disconnect();
     this.echo = null;
+    this.connected.set(false);
   }
 }

@@ -6,6 +6,12 @@ import { MatIconModule } from '@angular/material/icon';
 import { ApiService } from '../core/api.service';
 
 type CashStats = { isOpen: boolean; currentId: number | null; estimatedBalance: number };
+type TurnoOrder = {
+  id: number; code: string; type: string; type_label: string; reference: string | null;
+  items_count: number; payment_method: string; total: number | string; cashier: string | null; created_at: string;
+};
+type TurnoExpense = { id: number; category: string; description: string; amount: number | string; created_at: string };
+type Turno = { orders: TurnoOrder[]; orders_total: number; expenses: TurnoExpense[]; expenses_total: number };
 
 @Component({
   selector: 'app-cash',
@@ -71,7 +77,69 @@ type CashStats = { isOpen: boolean; currentId: number | null; estimatedBalance: 
 
       @if (!registers.length) { <div class="empty-state"><mat-icon>point_of_sale</mat-icon><p>No hay cajas registradas.</p></div> }
     </div>
-  </section>`
+
+    @if (turno) {
+      <div class="admin-panel">
+        <div class="panel-subhead">
+          <div><h3>Todas las Ordenes</h3><small class="dim">Total: {{turno.orders_total}} ordenes completadas</small></div>
+        </div>
+
+        <div class="segmented-control turno-tabs">
+          <button type="button" [class.active]="orderTypeFilter === 'all'" (click)="orderTypeFilter = 'all'">Todas <span class="count-pill">{{turno.orders_total}}</span></button>
+          <button type="button" [class.active]="orderTypeFilter === 'mesa'" (click)="orderTypeFilter = 'mesa'">Mesa <span class="count-pill">{{ordersByType('mesa').length}}</span></button>
+          <button type="button" [class.active]="orderTypeFilter === 'delivery'" (click)="orderTypeFilter = 'delivery'">Delivery <span class="count-pill">{{ordersByType('delivery').length}}</span></button>
+          <button type="button" [class.active]="orderTypeFilter === 'para_llevar'" (click)="orderTypeFilter = 'para_llevar'">Para llevar <span class="count-pill">{{ordersByType('para_llevar').length}}</span></button>
+        </div>
+
+        @if (!filteredOrders().length) {
+          <div class="empty-state"><mat-icon>receipt_long</mat-icon><p>No hay ordenes para este filtro.</p></div>
+        } @else {
+          <div class="data-table">
+            <div class="data-row table-head" [style.--cols]="8"><span>#</span><span>Tipo</span><span>Mesa/Cliente</span><span>Items</span><span>Pago</span><span class="money-cell">Total</span><span>Cobrado por</span><span>Hora</span></div>
+            @for (row of filteredOrders(); track row.id) {
+              <div class="data-row" [style.--cols]="8">
+                <span class="voucher-code">{{row.code}}</span>
+                <span><span class="category-pill">{{row.type_label}}</span></span>
+                <span>{{row.reference || '-'}}</span>
+                <span><span class="count-pill">{{row.items_count}}</span></span>
+                <span class="payment-cell"><mat-icon>{{paymentIcons[row.payment_method] || 'payments'}}</mat-icon>{{paymentLabels[row.payment_method] || row.payment_method}}</span>
+                <span class="money-cell"><b>{{number(row.total) | currency:'PEN':'S/ '}}</b></span>
+                <span>{{row.cashier || '-'}}</span>
+                <span>{{row.created_at | date:'HH:mm'}}</span>
+              </div>
+            }
+          </div>
+        }
+      </div>
+
+      <div class="admin-panel">
+        <div class="panel-subhead">
+          <div><h3>Gastos del Turno</h3><small class="dim">Total: {{turno.expenses.length}} gastos &middot; {{turno.expenses_total | currency:'PEN':'S/ '}}</small></div>
+        </div>
+
+        @if (!turno.expenses.length) {
+          <div class="empty-state"><mat-icon>payments</mat-icon><p>No se registraron gastos en este turno.</p></div>
+        } @else {
+          <div class="data-table">
+            <div class="data-row table-head" [style.--cols]="3"><span>Categoria</span><span>Descripcion</span><span class="money-cell">Monto</span></div>
+            @for (row of turno.expenses; track row.id) {
+              <div class="data-row" [style.--cols]="3">
+                <span><span class="category-pill">{{row.category}}</span></span>
+                <span>{{row.description}}</span>
+                <span class="money-cell expense-amount"><b>{{number(row.amount) | currency:'PEN':'S/ '}}</b></span>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    }
+  </section>`,
+  styles: [`
+    .dim { color: var(--muted); font-size: 12px; }
+    .turno-tabs { margin-bottom: 14px; }
+    .turno-tabs button { display: flex; align-items: center; gap: 6px; }
+    .turno-tabs .count-pill { padding: 1px 7px; font-size: 11px; }
+  `]
 })
 export class CashComponent implements OnInit {
   api = inject(ApiService);
@@ -82,11 +150,17 @@ export class CashComponent implements OnInit {
   counted: number | null = null;
   showFullHistory = false;
 
+  turno: Turno | null = null;
+  orderTypeFilter: 'all' | 'mesa' | 'delivery' | 'para_llevar' = 'all';
+  paymentIcons: Record<string, string> = { cash: 'payments', yape: 'smartphone', plin: 'smartphone', card: 'credit_card', transfer: 'account_balance', mixed: 'call_split' };
+  paymentLabels: Record<string, string> = { cash: 'Efectivo', yape: 'Yape', plin: 'Plin', card: 'Tarjeta', transfer: 'Transferencia', mixed: 'Mixto' };
+
   ngOnInit() { this.load(); }
 
   load() {
     this.api.get<any>('cash-registers').subscribe((r: any) => {
       this.registers = r.data || [];
+      this.loadTurno();
       this.cdr.detectChanges();
     });
     this.loadStats();
@@ -97,6 +171,18 @@ export class CashComponent implements OnInit {
       this.stats = { isOpen: !!res?.is_open, currentId: res?.current_id ?? null, estimatedBalance: Number(res?.estimated_balance || 0) };
       this.cdr.detectChanges();
     });
+  }
+
+  loadTurno() {
+    const registerId = this.stats?.currentId || this.registers[0]?.id;
+    if (!registerId) { this.turno = null; return; }
+    this.api.get<Turno>(`cash-registers/${registerId}/turno`).subscribe(t => { this.turno = t; this.cdr.detectChanges(); });
+  }
+
+  ordersByType(type: string): TurnoOrder[] { return this.turno?.orders.filter(o => o.type === type) || []; }
+  filteredOrders(): TurnoOrder[] {
+    if (!this.turno) return [];
+    return this.orderTypeFilter === 'all' ? this.turno.orders : this.ordersByType(this.orderTypeFilter);
   }
 
   recentRegisters() { return this.registers.slice(0, 4); }

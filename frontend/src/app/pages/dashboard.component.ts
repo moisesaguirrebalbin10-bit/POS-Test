@@ -62,6 +62,24 @@ type CategoryOption = { id: number; name: string };
       </article>
     </div>
 
+    <div class="dashboard-charts last-sale-row">
+      <article class="last-sale-card">
+        <span class="status-dot-label"><span class="status-dot"></span>Ultima Venta</span>
+        @if (lastSale) {
+          <strong>{{lastSaleTime()}}</strong>
+          <small>Duracion: {{lastSaleDuration}}</small>
+        } @else {
+          <strong class="last-sale-empty">Sin ventas hoy</strong>
+          <small>Aun no se registra ninguna venta</small>
+        }
+      </article>
+      <article class="chart-card">
+        <header><mat-icon>show_chart</mat-icon><h3>Ventas por Hora</h3></header>
+        <p class="chart-card-subtitle">Distribucion de ventas durante el turno</p>
+        <canvas #salesByHour></canvas>
+      </article>
+    </div>
+
     <div class="dashboard-charts">
       <article class="chart-card chart-card-wide trends-card">
         <header class="trends-header">
@@ -124,9 +142,14 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
   @ViewChild('products') products!: ElementRef<HTMLCanvasElement>;
   @ViewChild('payments') payments!: ElementRef<HTMLCanvasElement>;
   @ViewChild('stock') stock!: ElementRef<HTMLCanvasElement>;
+  @ViewChild('salesByHour') salesByHourEl!: ElementRef<HTMLCanvasElement>;
   @ViewChild('trendsChart') trendsChartEl!: ElementRef<HTMLDivElement>;
   private trendsChart?: ApexCharts;
+  private salesByHourChart?: Chart;
   private themeObserver?: MutationObserver;
+  lastSale: { created_at: string; total: number } | null = null;
+  lastSaleDuration = '';
+  private durationTimer?: ReturnType<typeof setInterval>;
 
   ngAfterViewInit() {
     this.api.get<any>('dashboard').subscribe(d => {
@@ -135,6 +158,9 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
       this.chart(this.products.nativeElement, 'bar', d.top_products, 'product_name', 'quantity');
       this.chart(this.payments.nativeElement, 'doughnut', d.payment_methods, 'payment_method', 'total');
       this.chart(this.stock.nativeElement, 'bar', d.low_stock_by_category, 'name', 'total');
+      this.lastSale = d.last_sale ? { created_at: d.last_sale.created_at, total: Number(d.last_sale.total || 0) } : null;
+      this.updateLastSaleDuration();
+      this.renderSalesByHourChart(d.sales_by_hour || []);
       this.cdr.detectChanges();
     });
 
@@ -144,12 +170,55 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
     this.themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
 
     this.saleSub = this.realtime.saleCreated$.subscribe(() => this.loadTrends());
+    this.durationTimer = setInterval(() => { this.updateLastSaleDuration(); this.cdr.detectChanges(); }, 30000);
   }
 
   ngOnDestroy() {
     this.themeObserver?.disconnect();
     this.trendsChart?.destroy();
+    this.salesByHourChart?.destroy();
     this.saleSub?.unsubscribe();
+    if (this.durationTimer) clearInterval(this.durationTimer);
+  }
+
+  lastSaleTime() {
+    if (!this.lastSale) return '';
+    return new Date(this.lastSale.created_at).toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' });
+  }
+
+  updateLastSaleDuration() {
+    if (!this.lastSale) { this.lastSaleDuration = ''; return; }
+    const diffMs = Date.now() - new Date(this.lastSale.created_at).getTime();
+    const totalMinutes = Math.max(0, Math.floor(diffMs / 60000));
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    this.lastSaleDuration = hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
+  }
+
+  renderSalesByHourChart(points: { hour: string; total: number }[]) {
+    const el = this.salesByHourEl?.nativeElement;
+    if (!el) return;
+    this.salesByHourChart?.destroy();
+    this.salesByHourChart = new Chart(el, {
+      type: 'line',
+      data: {
+        labels: points.map(p => p.hour),
+        datasets: [{
+          data: points.map(p => p.total),
+          borderColor: '#0f766e',
+          backgroundColor: 'rgba(15,118,110,.12)',
+          fill: true, tension: 0.4, pointRadius: 0, borderWidth: 3,
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          y: { beginAtZero: true, title: { display: true, text: 'Monto (S/)' }, ticks: { callback: (v: any) => 'S/ ' + v } },
+          x: { title: { display: true, text: 'Hora' } },
+        }
+      }
+    });
   }
 
   setPeriod(range: TrendPeriod) {

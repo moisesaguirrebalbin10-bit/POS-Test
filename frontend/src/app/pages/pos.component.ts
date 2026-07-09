@@ -299,7 +299,8 @@ export class PosComponent implements OnInit, OnDestroy {
     this.loading = true;
     this.cdr.detectChanges();
 
-    this.api.get<any>('products').subscribe({
+    const params: any = this.branding.businessType() === 'restaurant' ? { type: 'plato', per_page: 200 } : {};
+    this.api.get<any>('products', params).subscribe({
       next: (r: any) => {
         this.allProducts = this.normalizeProducts(r);
         this.loading = false;

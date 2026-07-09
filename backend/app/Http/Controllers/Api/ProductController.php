@@ -20,7 +20,12 @@ class ProductController extends Controller
                 ->orWhereHas('category', fn ($c) => $c->where('name', 'like', "%$s%"))))
             ->when($request->category_id, fn ($q, $v) => $q->where('category_id', $v))
             ->when($request->warehouse_id, fn ($q, $v) => $q->where('warehouse_id', $v))
-            ->when($request->low_stock, fn ($q) => $q->whereColumn('stock', '<=', 'min_stock'))
+            ->when($request->low_stock, fn ($q) => $q->where(fn ($w) => $w->whereNull('type')->orWhere('type', '!=', 'plato'))->whereColumn('stock', '<=', 'min_stock'))
+            ->when($request->type, fn ($q, $v) => $q->where('type', $v))
+            ->when($request->area_preparacion, fn ($q, $v) => $q->where('area_preparacion', $v))
+            ->when($request->filled('active'), fn ($q) => $q->where('active', $request->boolean('active')))
+            ->when($request->min_price, fn ($q, $v) => $q->where('sale_price', '>=', $v))
+            ->when($request->max_price, fn ($q, $v) => $q->where('sale_price', '<=', $v))
             ->paginate($request->integer('per_page') ?: ($request->search ? 60 : 30));
     }
 
@@ -30,8 +35,11 @@ class ProductController extends Controller
 
         return [
             'top_categories' => $categories->take(2)->map(fn ($c) => ['id' => $c->id, 'name' => $c->name, 'count' => $c->products_count])->values(),
-            'low_stock' => Product::whereColumn('stock', '<=', 'min_stock')->count(),
+            'low_stock' => Product::where(fn ($q) => $q->whereNull('type')->orWhere('type', '!=', 'plato'))->whereColumn('stock', '<=', 'min_stock')->count(),
             'categories_count' => $categories->count(),
+            'platos_count' => Product::where('type', 'plato')->count(),
+            'articulos_count' => Product::where('type', 'articulo')->count(),
+            'max_price' => (float) (Product::max('sale_price') ?? 0),
         ];
     }
 
@@ -86,18 +94,29 @@ class ProductController extends Controller
     }
     public function lowStock()
     {
-        return Product::with('category', 'warehouse')->whereColumn('stock', '<=', 'min_stock')->get();
+        return Product::with('category', 'warehouse')
+            ->where(fn ($q) => $q->whereNull('type')->orWhere('type', '!=', 'plato'))
+            ->whereColumn('stock', '<=', 'min_stock')->get();
     }
 
     private function validated(Request $request, ?int $id = null): array
     {
         $companyId = app('currentCompanyId');
+        $isCreate = $id === null;
+        $isDish = $request->input('type') === 'plato';
+        $req = fn (string $rule) => $isCreate ? $rule : 'sometimes';
+
         return $request->validate([
-            'sku' => ['required', Rule::unique('products', 'sku')->where('company_id', $companyId)->ignore($id)],
-            'name' => ['required'], 'category_id' => ['required', Rule::exists('categories', 'id')->where('company_id', $companyId)],
-            'warehouse_id' => ['required', Rule::exists('warehouses', 'id')->where('company_id', $companyId)], 'sale_price' => ['required', 'numeric', 'min:0'],
-            'cost' => ['required', 'numeric', 'min:0'], 'stock' => ['required', 'numeric', 'min:0'],
-            'min_stock' => ['required', 'numeric', 'min:0'], 'active' => ['boolean'], 'image_path' => ['nullable'],
+            'sku' => [$req('required'), Rule::unique('products', 'sku')->where('company_id', $companyId)->ignore($id)],
+            'name' => [$req('required')], 'category_id' => [$req('required'), Rule::exists('categories', 'id')->where('company_id', $companyId)],
+            'warehouse_id' => [$isDish ? 'nullable' : $req('required'), Rule::exists('warehouses', 'id')->where('company_id', $companyId)],
+            'sale_price' => [$req('required'), 'numeric', 'min:0'],
+            'cost' => [$req('required'), 'numeric', 'min:0'],
+            'stock' => [$isDish ? 'nullable' : $req('required'), 'numeric', 'min:0'],
+            'min_stock' => [$isDish ? 'nullable' : $req('required'), 'numeric', 'min:0'],
+            'active' => ['boolean'], 'image_path' => ['nullable'],
+            'type' => ['nullable', 'in:plato,articulo'],
+            'area_preparacion' => ['nullable', 'in:cocina,bar'],
         ]);
     }
 }

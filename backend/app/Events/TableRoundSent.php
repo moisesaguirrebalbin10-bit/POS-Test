@@ -14,20 +14,22 @@ class TableRoundSent implements ShouldBroadcast
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    public int $tableId;
-    public string $tableName;
+    public ?int $tableId;
+    public ?string $tableName;
     public int $tableOrderId;
     public int $roundId;
     public int $companyId;
+    public string $orderType;
 
     public function __construct(RestaurantTableOrderRound $round)
     {
         $tableOrder = $round->tableOrder;
         $this->tableId = $tableOrder->restaurant_table_id;
-        $this->tableName = $tableOrder->table->name;
+        $this->tableName = $tableOrder->table?->name;
         $this->tableOrderId = $tableOrder->id;
         $this->roundId = $round->id;
         $this->companyId = $round->company_id;
+        $this->orderType = $tableOrder->type;
     }
 
     public function broadcastOn(): Channel

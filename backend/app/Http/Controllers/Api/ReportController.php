@@ -24,7 +24,7 @@ class ReportController extends Controller
             'expenses' => ExpenseIncome::where('type', 'expense')->whereBetween('date', [$from, $to])->get(),
             'profit' => SaleItem::selectRaw('product_name, sum(total - (unit_cost * quantity)) as profit')->groupBy('product_name')->orderByDesc('profit')->get(),
             'stock' => Product::with('category', 'warehouse')->get(),
-            'low-stock' => Product::with('category', 'warehouse')->whereColumn('stock', '<=', 'min_stock')->get(),
+            'low-stock' => Product::with('category', 'warehouse')->where(fn ($q) => $q->whereNull('type')->orWhere('type', '!=', 'plato'))->whereColumn('stock', '<=', 'min_stock')->get(),
             'sales-by-user' => Sale::join('users', 'users.id', '=', 'sales.user_id')->selectRaw('users.name, sum(total) total')->groupBy('users.name')->get(),
             'sales-by-payment' => Sale::selectRaw('payment_method, sum(total) total')->groupBy('payment_method')->get(),
             default => abort(404, 'Reporte no encontrado.'),

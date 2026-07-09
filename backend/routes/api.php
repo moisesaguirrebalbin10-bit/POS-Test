@@ -1,16 +1,23 @@
 <?php
 
 use App\Http\Controllers\Api\ActivityLogController;
+use App\Http\Controllers\Api\ArticuloStockController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CashRegisterController;
 use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\CompanySettingController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\ExpenseIncomeController;
+use App\Http\Controllers\Api\IngredientCategoryController;
+use App\Http\Controllers\Api\IngredientController;
+use App\Http\Controllers\Api\InventorySummaryController;
+use App\Http\Controllers\Api\KardexController;
 use App\Http\Controllers\Api\LicenseController;
 use App\Http\Controllers\Api\ProductController;
+use App\Http\Controllers\Api\RecipeController;
 use App\Http\Controllers\Api\RegisterController;
 use App\Http\Controllers\Api\ReportController;
+use App\Http\Controllers\Api\ReservationController;
 use App\Http\Controllers\Api\RestaurantTableController;
 use App\Http\Controllers\Api\RestaurantTableOrderController;
 use App\Http\Controllers\Api\RoleController;
@@ -85,6 +92,7 @@ Route::middleware(['auth:sanctum', 'tenant'])->group(function () {
     Route::apiResource('cash-registers', CashRegisterController::class)->only(['update'])->middleware('permission:cash.update');
     Route::apiResource('cash-registers', CashRegisterController::class)->only(['destroy'])->middleware('permission:cash.close');
     Route::post('/cash-registers/{cashRegister}/close', [CashRegisterController::class, 'close'])->middleware('permission:cash.close');
+    Route::get('/cash-registers/{cashRegister}/turno', [CashRegisterController::class, 'turno'])->middleware('permission:cash.view');
 
     Route::get('/expenses-income-stats', [ExpenseIncomeController::class, 'stats'])->middleware('permission:movements.view');
     Route::apiResource('expenses-income', ExpenseIncomeController::class)->parameters(['expenses-income' => 'expenseIncome'])->only(['index', 'show'])->middleware('permission:movements.view');
@@ -106,5 +114,45 @@ Route::middleware(['auth:sanctum', 'tenant'])->group(function () {
         Route::post('/tables/{table}/rounds', [RestaurantTableOrderController::class, 'storeRound']);
         Route::patch('/table-order-items/{item}/deliver', [RestaurantTableOrderController::class, 'deliverItem']);
         Route::post('/table-orders/{tableOrder}/charge', [RestaurantTableOrderController::class, 'charge']);
+        Route::post('/table-orders/{tableOrder}/rounds', [RestaurantTableOrderController::class, 'addRound']);
+        Route::post('/table-orders/{tableOrder}/advance-payment', [RestaurantTableOrderController::class, 'advancePayment']);
+        Route::get('/table-orders/{tableOrder}/comanda-pdf', [RestaurantTableOrderController::class, 'comandaPdf']);
+        Route::get('/table-orders/{tableOrder}/precuenta-pdf', [RestaurantTableOrderController::class, 'precuentaPdf']);
+
+        Route::get('/orders', [RestaurantTableOrderController::class, 'index']);
+        Route::post('/orders', [RestaurantTableOrderController::class, 'store']);
+        Route::get('/orders-stats', [RestaurantTableOrderController::class, 'stats']);
+        Route::get('/orders-kitchen', [RestaurantTableOrderController::class, 'kitchen']);
+        Route::get('/orders-most-ordered', [RestaurantTableOrderController::class, 'mostOrdered']);
+    });
+
+    Route::middleware('permission:reservations.manage')->group(function () {
+        Route::get('/reservations', [ReservationController::class, 'index']);
+        Route::post('/reservations', [ReservationController::class, 'store']);
+        Route::patch('/reservations/{reservation}/status', [ReservationController::class, 'updateStatus']);
+        Route::delete('/reservations/{reservation}', [ReservationController::class, 'destroy']);
+        Route::get('/reservations-upcoming-count', [ReservationController::class, 'upcomingCount']);
+    });
+
+    Route::middleware('permission:inventory.manage')->group(function () {
+        Route::get('/inventory-summary', InventorySummaryController::class);
+
+        Route::apiResource('ingredient-categories', IngredientCategoryController::class)->only(['index', 'store', 'update', 'destroy']);
+
+        Route::get('/ingredients-pdf', [IngredientController::class, 'exportPdf']);
+        Route::get('/ingredients-excel', [IngredientController::class, 'exportExcel']);
+        Route::post('/ingredients-import', [IngredientController::class, 'import']);
+        Route::apiResource('ingredients', IngredientController::class)->only(['index', 'store', 'update', 'destroy']);
+
+        Route::get('/articulos-stock', [ArticuloStockController::class, 'index']);
+        Route::get('/articulos-stock-pdf', [ArticuloStockController::class, 'exportPdf']);
+        Route::get('/articulos-stock-excel', [ArticuloStockController::class, 'exportExcel']);
+        Route::post('/articulos-stock-conteo', [ArticuloStockController::class, 'conteo']);
+
+        Route::get('/recipes-stats', [RecipeController::class, 'stats']);
+        Route::get('/recipes-available-products', [RecipeController::class, 'availableProducts']);
+        Route::apiResource('recipes', RecipeController::class)->only(['index', 'store', 'update', 'destroy']);
+
+        Route::get('/kardex', [KardexController::class, 'index']);
     });
 });

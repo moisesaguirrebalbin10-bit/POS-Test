@@ -12,22 +12,20 @@ class RestaurantTableController extends Controller
 {
     public function index()
     {
-        $tables = RestaurantTable::with(['orders' => function ($q) {
-            $q->whereIn('status', ['open', 'awaiting_payment'])
-                ->with(['rounds.items'])
-                ->latest('opened_at');
-        }])->orderBy('name')->get();
+        $tables = RestaurantTable::with([
+            'orders' => function ($q) {
+                $q->whereIn('status', ['open', 'awaiting_payment'])
+                    ->with(['rounds.items'])
+                    ->latest('opened_at');
+            },
+            'reservations' => function ($q) {
+                $q->whereDate('reserved_at', now()->toDateString())
+                    ->whereIn('status', ['pending', 'seated'])
+                    ->orderBy('reserved_at');
+            },
+        ])->orderBy('name')->get();
 
-        return $tables->map(function (RestaurantTable $table) {
-            $order = $table->orders->first();
-            return [
-                'id' => $table->id,
-                'name' => $table->name,
-                'status' => $table->status,
-                'capacity' => $table->capacity,
-                'active_order' => $order ? $this->presentOrder($order) : null,
-            ];
-        });
+        return $tables->map(fn (RestaurantTable $table) => $this->presentTable($table, $table->orders->first()));
     }
 
     public function store(Request $request)
@@ -35,6 +33,7 @@ class RestaurantTableController extends Controller
         $data = $request->validate([
             'name' => ['required', 'string', 'max:50', Rule::unique('restaurant_tables', 'name')->where('company_id', app('currentCompanyId'))],
             'capacity' => ['nullable', 'integer', 'min:1', 'max:99'],
+            'zone' => ['nullable', 'string', 'max:50'],
         ]);
 
         $table = RestaurantTable::create($data);
@@ -48,6 +47,7 @@ class RestaurantTableController extends Controller
         $data = $request->validate([
             'name' => ['required', 'string', 'max:50', Rule::unique('restaurant_tables', 'name')->where('company_id', app('currentCompanyId'))->ignore($table->id)],
             'capacity' => ['nullable', 'integer', 'min:1', 'max:99'],
+            'zone' => ['nullable', 'string', 'max:50'],
         ]);
 
         $table->update($data);
@@ -71,13 +71,31 @@ class RestaurantTableController extends Controller
 
     public function show(RestaurantTable $table)
     {
-        $order = $table->activeOrder();
+        $table->load(['reservations' => function ($q) {
+            $q->whereDate('reserved_at', now()->toDateString())->whereIn('status', ['pending', 'seated'])->orderBy('reserved_at');
+        }]);
+
+        return $this->presentTable($table, $table->activeOrder());
+    }
+
+    private function presentTable(RestaurantTable $table, $order = null): array
+    {
+        $nextReservation = $table->reservations->first();
 
         return [
             'id' => $table->id,
             'name' => $table->name,
             'status' => $table->status,
             'capacity' => $table->capacity,
+            'zone' => $table->zone,
+            'has_upcoming_reservation' => $table->reservations->isNotEmpty(),
+            'next_reservation' => $nextReservation ? [
+                'id' => $nextReservation->id,
+                'customer_name' => $nextReservation->customer_name,
+                'party_size' => $nextReservation->party_size,
+                'reserved_at' => $nextReservation->reserved_at,
+                'status' => $nextReservation->status,
+            ] : null,
             'active_order' => $order ? $this->presentOrder($order) : null,
         ];
     }

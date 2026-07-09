@@ -8,6 +8,7 @@ use App\Models\Concerns\BelongsToCompany;
 use App\Support\Broadcaster;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Product extends Model
@@ -16,7 +17,7 @@ class Product extends Model
 
     protected $fillable = [
         'sku', 'name', 'category_id', 'warehouse_id', 'sale_price', 'cost',
-        'stock', 'min_stock', 'active', 'image_path',
+        'stock', 'min_stock', 'active', 'image_path', 'type', 'area_preparacion',
     ];
 
     protected $casts = [
@@ -30,7 +31,7 @@ class Product extends Model
     protected static function booted(): void
     {
         static::updated(function (Product $product) {
-            if (!$product->wasChanged('stock')) {
+            if ($product->isDish() || !$product->wasChanged('stock')) {
                 return;
             }
 
@@ -50,6 +51,20 @@ class Product extends Model
     public function warehouse(): BelongsTo
     {
         return $this->belongsTo(Warehouse::class);
+    }
+
+    public function recipe(): HasOne
+    {
+        return $this->hasOne(Recipe::class);
+    }
+
+    /**
+     * Los platos de la Carta (modo Restaurante) no llevan control de stock/almacen,
+     * a diferencia de los articulos y de los productos de modo Market.
+     */
+    public function isDish(): bool
+    {
+        return $this->type === 'plato';
     }
 }
 

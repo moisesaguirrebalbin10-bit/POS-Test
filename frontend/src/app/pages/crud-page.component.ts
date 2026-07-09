@@ -13,6 +13,7 @@ import { MatMenuModule } from '@angular/material/menu';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { DialogModule } from 'primeng/dialog';
 import { ImageModule } from 'primeng/image';
+import { SliderModule } from 'primeng/slider';
 import { Chart } from 'chart.js/auto';
 import { ApiService } from '../core/api.service';
 import { BrandingService } from '../core/branding.service';
@@ -22,11 +23,12 @@ import { PdfPreviewDialogComponent } from '../shared/pdf-preview-dialog.componen
 type Column = { key: string; label: string; type?: 'text' | 'money' | 'date' | 'status' | 'image' | 'count' };
 type Field = { key: string; label: string; type?: 'text' | 'number' | 'password' | 'checkbox' | 'image' | 'permissions' | 'select' | 'multiselect' | 'date' | 'textarea'; required?: boolean; options?: { value: string; label: string }[] };
 type PermissionOption = { id: number; key: string; module: string; label: string };
+type CartaFilter = { categoryId: string; area: string; visible: string; priceRange: [number, number] };
 
 @Component({
   selector: 'app-crud-page',
   standalone: true,
-  imports: [FormsModule, CurrencyPipe, DatePipe, RouterLink, MatButtonModule, MatIconModule, MatFormFieldModule, MatInputModule, MatDatepickerModule, MatNativeDateModule, MatMenuModule, DialogModule, ImageModule, PdfPreviewDialogComponent],
+  imports: [FormsModule, CurrencyPipe, DatePipe, RouterLink, MatButtonModule, MatIconModule, MatFormFieldModule, MatInputModule, MatDatepickerModule, MatNativeDateModule, MatMenuModule, DialogModule, ImageModule, SliderModule, PdfPreviewDialogComponent],
   template: `
   <section class="admin-page">
     <header class="admin-head">
@@ -50,7 +52,7 @@ type PermissionOption = { id: number; key: string; module: string; label: string
           <button mat-flat-button class="primary-action" (click)="openCreate()"><mat-icon>add</mat-icon>Nuevo Movimiento</button>
         </div>
       } @else {
-        <button mat-flat-button class="primary-action" (click)="single ? openEdit(rows[0]) : openCreate()"><mat-icon>{{single ? 'edit' : 'add'}}</mat-icon>{{single ? (endpoint === 'company-settings' ? 'Editar Configuracion' : 'Editar') : (endpoint === 'products' ? 'Nuevo Producto' : (endpoint === 'warehouses' ? 'Nuevo Almacen' : (endpoint === 'users' ? 'Nuevo Usuario' : (endpoint === 'roles' ? 'Nuevo Rol' : 'Nuevo'))))}}</button>
+        <button mat-flat-button class="primary-action" (click)="single ? openEdit(rows[0]) : openCreate()"><mat-icon>{{single ? 'edit' : 'add'}}</mat-icon>{{single ? (endpoint === 'company-settings' ? 'Editar Configuracion' : 'Editar') : (endpoint === 'products' ? 'Nuevo Producto' : (endpoint === 'carta' ? (cartaTab === 'plato' ? 'Nuevo Plato' : 'Nuevo Articulo') : (endpoint === 'warehouses' ? 'Nuevo Almacen' : (endpoint === 'users' ? 'Nuevo Usuario' : (endpoint === 'roles' ? 'Nuevo Rol' : 'Nuevo')))))}}</button>
       }
     </header>
 
@@ -67,7 +69,49 @@ type PermissionOption = { id: number; key: string; module: string; label: string
                 <button mat-menu-item (click)="setUserStatusFilter('inactive')">Inactivos</button>
               </mat-menu>
             }
+            @if (endpoint === 'carta') {
+              <button type="button" class="icon-btn" [class.active]="cartaFiltersActive()" title="Filtros" (click)="toggleCartaFilterPanel()"><mat-icon>filter_list</mat-icon></button>
+            }
             <button mat-flat-button class="filter-action" (click)="load()" [disabled]="loading"><mat-icon>refresh</mat-icon>{{loading ? 'Cargando' : 'Actualizar'}}</button>
+          </div>
+        </div>
+      }
+      @if (endpoint === 'carta' && cartaFilterOpen) {
+        <div class="carta-filter-panel">
+          <div class="carta-filter-row">
+            <div class="report-field">
+              <label>Categoria</label>
+              <select class="date-preset-select" [(ngModel)]="cartaFilterDraft.categoryId">
+                <option value="">Todas</option>
+                @for (c of categoryOptions; track c.value) { <option [value]="c.value">{{c.label}}</option> }
+              </select>
+            </div>
+            @if (cartaTab === 'plato') {
+              <div class="report-field">
+                <label>Area de Preparacion</label>
+                <select class="date-preset-select" [(ngModel)]="cartaFilterDraft.area">
+                  <option value="">Todas</option>
+                  <option value="cocina">Cocina</option>
+                  <option value="bar">Bar</option>
+                </select>
+              </div>
+            }
+            <div class="report-field">
+              <label>Visible</label>
+              <select class="date-preset-select" [(ngModel)]="cartaFilterDraft.visible">
+                <option value="">Todos</option>
+                <option value="1">Visible</option>
+                <option value="0">Oculto</option>
+              </select>
+            </div>
+          </div>
+          <div class="carta-filter-price">
+            <label>Rango de Precio: {{number(cartaFilterDraft.priceRange[0]) | currency:'PEN':'S/ '}} &ndash; {{number(cartaFilterDraft.priceRange[1]) | currency:'PEN':'S/ '}}</label>
+            <p-slider [(ngModel)]="cartaFilterDraft.priceRange" [range]="true" [min]="0" [max]="cartaPriceCeiling"></p-slider>
+          </div>
+          <div class="carta-filter-actions">
+            <button type="button" mat-stroked-button (click)="cancelCartaFilters()">Cancelar</button>
+            <button type="button" mat-flat-button class="primary-action" (click)="applyCartaFilters()"><mat-icon>filter_list</mat-icon>Filtrar</button>
           </div>
         </div>
       }
@@ -125,6 +169,63 @@ type PermissionOption = { id: number; key: string; module: string; label: string
             </div>
           </div>
         }
+      } @else if (endpoint === 'carta') {
+        <div class="carta-tabs">
+          <button type="button" class="carta-tab" [class.active]="cartaTab === 'plato'" (click)="setCartaTab('plato')"><mat-icon>restaurant</mat-icon>Platos<span class="carta-tab-count">{{cartaStats?.platosCount ?? 0}}</span></button>
+          <button type="button" class="carta-tab" [class.active]="cartaTab === 'articulo'" (click)="setCartaTab('articulo')"><mat-icon>inventory_2</mat-icon>Articulos<span class="carta-tab-count">{{cartaStats?.articulosCount ?? 0}}</span></button>
+        </div>
+        <div class="data-table">
+          <div class="data-row table-head" [style.--cols]="cartaTab === 'plato' ? 6 : 5">
+            <span>{{cartaTab === 'plato' ? 'Plato' : 'Articulo'}}</span>
+            <span>Categoria</span>
+            @if (cartaTab === 'plato') { <span>Area Prep.</span> }
+            <span class="money-cell">Precio</span>
+            <span class="money-cell">Costo / FC%</span>
+            <span>Visible</span>
+            <span class="table-actions">Acciones</span>
+          </div>
+          @for (row of rows; track row.id) {
+            <div class="data-row" [style.--cols]="cartaTab === 'plato' ? 6 : 5">
+              <span class="carta-name-cell">
+                <span class="carta-thumb">
+                  @if (row.image_path) { <p-image [src]="imageUrl(row.image_path)" [alt]="row.name" [preview]="true" imageClass="table-thumb" /> }
+                  @else { <span class="carta-thumb-placeholder"><mat-icon>{{cartaTab === 'plato' ? 'restaurant' : 'inventory_2'}}</mat-icon></span> }
+                </span>
+                <b>{{row.name}}</b>
+              </span>
+              <span><span class="category-pill">{{row.category?.name || '-'}}</span></span>
+              @if (cartaTab === 'plato') {
+                <span>
+                  @if (row.area_preparacion) { <span class="category-pill" [class.expense]="row.area_preparacion === 'bar'">{{row.area_preparacion === 'bar' ? 'Bar' : 'Cocina'}}</span> }
+                  @else { <span class="dash">&mdash;</span> }
+                </span>
+              }
+              <span class="money-cell">{{number(row.sale_price) | currency:'PEN':'S/ '}}</span>
+              <span class="money-cell fc-cell">
+                <small>{{number(row.cost) | currency:'PEN':'S/ '}}</small>
+                <b class="fc-badge" [class.warn]="fcPercent(row) > 35">{{fcPercent(row)}}%</b>
+              </span>
+              <span>
+                <label class="switch">
+                  <input type="checkbox" [checked]="row.active" (change)="toggleProductActive(row, $any($event.target).checked)">
+                  <span class="switch-track"></span><span class="switch-thumb"></span>
+                </label>
+              </span>
+              <span class="table-actions boxed-actions"><button mat-icon-button (click)="openEdit(row)"><mat-icon>edit</mat-icon></button><button mat-icon-button (click)="openDelete(row)"><mat-icon>delete</mat-icon></button></span>
+            </div>
+          }
+        </div>
+        @if (!rows.length) { <div class="empty-state"><mat-icon>{{cartaTab === 'plato' ? 'restaurant' : 'inventory_2'}}</mat-icon><p>{{cartaTab === 'plato' ? 'No hay platos registrados.' : 'No hay articulos registrados.'}}</p></div> }
+        @if (total > 0) {
+          <div class="pagination-bar">
+            <span class="pagination-label">Mostrando {{rangeStart()}} - {{rangeEnd()}} de {{total}} {{cartaTab === 'plato' ? 'platos' : 'articulos'}}</span>
+            <div class="pagination-controls">
+              <button type="button" class="page-btn" [disabled]="page <= 1" (click)="goToPage(page - 1)"><mat-icon>chevron_left</mat-icon></button>
+              @for (p of pageNumbers(); track p) { <button type="button" class="page-btn" [class.current]="p === page" (click)="goToPage(p)">{{p}}</button> }
+              <button type="button" class="page-btn" [disabled]="page >= lastPage" (click)="goToPage(page + 1)"><mat-icon>chevron_right</mat-icon></button>
+            </div>
+          </div>
+        }
       } @else if (endpoint === 'warehouses') {
         @if (warehouseStats) {
           <div class="stats-row">
@@ -144,7 +245,7 @@ type PermissionOption = { id: number; key: string; module: string; label: string
         </div>
         <div class="data-table">
           <div class="data-row table-head" [style.--cols]="5"><span>Almacen</span><span>Descripcion</span><span>Productos</span><span>Stock</span><span>Estado</span><span class="table-actions">Acciones</span></div>
-          @for (row of pagedWarehouseRows(); track row.id) {
+          @for (row of rows; track row.id) {
             <div class="data-row" [style.--cols]="5">
               <span class="warehouse-name-cell"><span class="warehouse-icon"><mat-icon>warehouse</mat-icon></span><b>{{row.name}}</b></span>
               <span>{{row.description || '-'}}</span>
@@ -155,13 +256,13 @@ type PermissionOption = { id: number; key: string; module: string; label: string
             </div>
           }
         </div>
-        @if (filteredWarehouseRows().length > warehousePerPage) {
+        @if (total > 0) {
           <div class="pagination-bar">
-            <span class="pagination-label">Mostrando {{warehouseRangeStart()}} - {{warehouseRangeEnd()}} de {{filteredWarehouseRows().length}} almacenes</span>
+            <span class="pagination-label">Mostrando {{rangeStart()}} - {{rangeEnd()}} de {{total}} almacenes</span>
             <div class="pagination-controls">
-              <button type="button" class="page-btn" [disabled]="warehousePage <= 1" (click)="goToWarehousePage(warehousePage - 1)"><mat-icon>chevron_left</mat-icon></button>
-              @for (p of warehousePageNumbers(); track p) { <button type="button" class="page-btn" [class.current]="p === warehousePage" (click)="goToWarehousePage(p)">{{p}}</button> }
-              <button type="button" class="page-btn" [disabled]="warehousePage >= warehouseLastPage()" (click)="goToWarehousePage(warehousePage + 1)"><mat-icon>chevron_right</mat-icon></button>
+              <button type="button" class="page-btn" [disabled]="page <= 1" (click)="goToPage(page - 1)"><mat-icon>chevron_left</mat-icon></button>
+              @for (p of pageNumbers(); track p) { <button type="button" class="page-btn" [class.current]="p === page" (click)="goToPage(p)">{{p}}</button> }
+              <button type="button" class="page-btn" [disabled]="page >= lastPage" (click)="goToPage(page + 1)"><mat-icon>chevron_right</mat-icon></button>
             </div>
           </div>
         }
@@ -438,7 +539,7 @@ type PermissionOption = { id: number; key: string; module: string; label: string
     </div>
 
     <p-dialog [(visible)]="modalOpen" [modal]="true" [dismissableMask]="true" [style]="{ width: 'min(760px, 94vw)' }" [contentStyle]="{ 'max-height': '72vh', overflow: 'auto' }">
-      <ng-template pTemplate="header"><div class="dialog-title"><h2>{{modalMode === 'create' ? 'Nuevo' : 'Editar'}} {{title}}</h2></div></ng-template>
+      <ng-template pTemplate="header"><div class="dialog-title"><h2>{{modalMode === 'create' ? 'Nuevo' : 'Editar'}} {{endpoint === 'carta' ? (cartaTab === 'plato' ? 'Plato' : 'Articulo') : title}}</h2></div></ng-template>
       <div class="modal-grid">
         @for (field of modalFields; track field.key) {
           @if (field.type === 'image') {
@@ -532,7 +633,6 @@ export class CrudPageComponent implements OnInit {
   productStats: { topCategories: { id: number; name: string; count: number }[]; lowStock: number; categoriesCount: number } | null = null;
   warehouseStats: { totalWarehouses: number; totalStock: number; movementsToday: number } | null = null;
   warehouseStatusFilter: 'all' | 'active' | 'inactive' = 'all';
-  warehousePage = 1; warehousePerPage = 8;
   salesStats: { todayTotal: number; trendPercent: number | null; vouchersCount: number; issuedPercent: number; avgTicket: number; popularMethod: string | null; popularPercent: number } | null = null;
   salesPaymentFilter = 'all';
   paymentLabels: Record<string, string> = { cash: 'Efectivo', yape: 'Yape', plin: 'Plin', card: 'Tarjeta', transfer: 'Transferencia', mixed: 'Mixto' };
@@ -550,7 +650,43 @@ export class CrudPageComponent implements OnInit {
   private requestId = 0;
   private searchTimer: ReturnType<typeof setTimeout> | undefined;
 
-  ngOnInit() { this.route.data.subscribe(d => { this.title = d['title']; this.endpoint = d['endpoint']; this.single = !!d['single']; this.columns = this.columnsFor(this.endpoint); this.subtitle = this.subtitleFor(this.endpoint); this.search = ''; this.page = 1; this.perPage = this.endpoint === 'sales' || this.endpoint === 'expenses-income' ? 10 : (this.endpoint === 'users' ? 8 : 12); this.warehousePage = 1; this.warehouseStatusFilter = 'all'; this.salesPaymentFilter = 'all'; this.expensesTypeFilter = 'all'; this.expensesDatePreset = 'month'; this.userStatusFilter = 'all'; this.rows = []; this.load(); if (this.endpoint === 'products') { this.loadProductLookups(); this.loadProductStats(); } if (this.endpoint === 'warehouses') this.loadWarehouseStats(); if (this.endpoint === 'sales') this.loadSalesStats(); if (this.endpoint === 'expenses-income') this.loadExpensesStats(); if (this.endpoint === 'users') { this.loadUserLookups(); this.loadUserStats(); } if (this.endpoint === 'roles') this.loadRoleStats(); }); }
+  ngOnInit() { this.route.data.subscribe(d => { this.title = d['title']; this.endpoint = d['endpoint']; this.single = !!d['single']; this.columns = this.columnsFor(this.endpoint); this.subtitle = this.subtitleFor(this.endpoint); this.search = ''; this.page = 1; this.perPage = this.endpoint === 'sales' || this.endpoint === 'expenses-income' ? 10 : (this.endpoint === 'users' || this.endpoint === 'warehouses' ? 8 : (this.endpoint === 'carta' ? 10 : 12)); this.warehouseStatusFilter = 'all'; this.salesPaymentFilter = 'all'; this.expensesTypeFilter = 'all'; this.expensesDatePreset = 'month'; this.userStatusFilter = 'all'; this.cartaTab = 'plato'; this.rows = []; this.load(); if (this.endpoint === 'products' || this.endpoint === 'carta') { this.loadProductLookups(); this.loadProductStats(); } if (this.endpoint === 'carta') this.loadCartaStats(); if (this.endpoint === 'warehouses') this.loadWarehouseStats(); if (this.endpoint === 'sales') this.loadSalesStats(); if (this.endpoint === 'expenses-income') this.loadExpensesStats(); if (this.endpoint === 'users') { this.loadUserLookups(); this.loadUserStats(); } if (this.endpoint === 'roles') this.loadRoleStats(); }); }
+  cartaTab: 'plato' | 'articulo' = 'plato';
+  cartaStats: { platosCount: number; articulosCount: number } | null = null;
+  cartaPriceCeiling = 200;
+  cartaFilterOpen = false;
+  cartaFilterDraft: CartaFilter = { categoryId: '', area: '', visible: '', priceRange: [0, 200] };
+  cartaFilterApplied: CartaFilter = { categoryId: '', area: '', visible: '', priceRange: [0, 200] };
+  loadCartaStats() {
+    this.api.get<any>('products-stats').subscribe(res => {
+      this.cartaStats = { platosCount: Number(res?.platos_count || 0), articulosCount: Number(res?.articulos_count || 0) };
+      this.cartaPriceCeiling = Math.max(1, Math.ceil(Number(res?.max_price || 0)));
+      if (this.cartaFilterApplied.priceRange[1] === 200 && this.cartaPriceCeiling !== 200) {
+        this.cartaFilterApplied = { ...this.cartaFilterApplied, priceRange: [0, this.cartaPriceCeiling] };
+        this.cartaFilterDraft = { ...this.cartaFilterDraft, priceRange: [0, this.cartaPriceCeiling] };
+      }
+      this.cdr.detectChanges();
+    });
+  }
+  setCartaTab(tab: 'plato' | 'articulo') { this.cartaTab = tab; this.page = 1; this.cartaFilterOpen = false; this.cartaFilterDraft = { categoryId: '', area: '', visible: '', priceRange: [0, this.cartaPriceCeiling] }; this.cartaFilterApplied = { ...this.cartaFilterDraft }; this.load(); }
+  toggleCartaFilterPanel() { if (!this.cartaFilterOpen) this.cartaFilterDraft = { ...this.cartaFilterApplied, priceRange: [...this.cartaFilterApplied.priceRange] }; this.cartaFilterOpen = !this.cartaFilterOpen; }
+  cancelCartaFilters() { this.cartaFilterOpen = false; }
+  applyCartaFilters() { this.cartaFilterApplied = { ...this.cartaFilterDraft, priceRange: [...this.cartaFilterDraft.priceRange] }; this.cartaFilterOpen = false; this.page = 1; this.load(); }
+  cartaFiltersActive(): boolean {
+    const f = this.cartaFilterApplied;
+    return !!f.categoryId || !!f.area || !!f.visible || f.priceRange[0] > 0 || f.priceRange[1] < this.cartaPriceCeiling;
+  }
+  fcPercent(row: any): number {
+    const price = Number(row.sale_price || 0);
+    if (!price) return 0;
+    return Math.round((Number(row.cost || 0) / price) * 100);
+  }
+  toggleProductActive(row: any, checked: boolean) {
+    this.api.put<any>(`products/${row.id}`, { active: checked }).subscribe({
+      next: () => { row.active = checked; this.messages.add({ severity: 'success', summary: 'Actualizado', detail: `"${row.name}" ahora esta ${checked ? 'visible' : 'oculto'}.` }); },
+      error: (err: any) => this.messages.add({ severity: 'error', summary: 'Error', detail: err?.error?.message || 'No se pudo actualizar.' })
+    });
+  }
   loadProductStats() {
     this.api.get<any>('products-stats').subscribe(res => {
       this.productStats = { topCategories: res?.top_categories || [], lowStock: Number(res?.low_stock || 0), categoriesCount: Number(res?.categories_count || 0) };
@@ -576,29 +712,7 @@ export class CrudPageComponent implements OnInit {
       this.cdr.detectChanges();
     });
   }
-  setWarehouseStatusFilter(filter: 'all' | 'active' | 'inactive') { this.warehouseStatusFilter = filter; this.warehousePage = 1; }
-  filteredWarehouseRows() {
-    let rows = this.rows;
-    if (this.warehouseStatusFilter === 'active') rows = rows.filter(r => r.active);
-    if (this.warehouseStatusFilter === 'inactive') rows = rows.filter(r => !r.active);
-    const term = this.search.trim().toLowerCase();
-    if (term) rows = rows.filter(r => (r.name || '').toLowerCase().includes(term) || (r.description || '').toLowerCase().includes(term));
-    return rows;
-  }
-  pagedWarehouseRows() { const start = (this.warehousePage - 1) * this.warehousePerPage; return this.filteredWarehouseRows().slice(start, start + this.warehousePerPage); }
-  warehouseLastPage() { return Math.max(1, Math.ceil(this.filteredWarehouseRows().length / this.warehousePerPage)); }
-  warehouseRangeStart() { return this.filteredWarehouseRows().length ? (this.warehousePage - 1) * this.warehousePerPage + 1 : 0; }
-  warehouseRangeEnd() { return Math.min(this.warehousePage * this.warehousePerPage, this.filteredWarehouseRows().length); }
-  warehousePageNumbers(): number[] {
-    const span = 5; const lastPage = this.warehouseLastPage();
-    let start = Math.max(1, this.warehousePage - Math.floor(span / 2));
-    const end = Math.min(lastPage, start + span - 1);
-    start = Math.max(1, end - span + 1);
-    const pages: number[] = [];
-    for (let p = start; p <= end; p++) pages.push(p);
-    return pages;
-  }
-  goToWarehousePage(p: number) { if (p < 1 || p > this.warehouseLastPage() || p === this.warehousePage) return; this.warehousePage = p; }
+  setWarehouseStatusFilter(filter: 'all' | 'active' | 'inactive') { this.warehouseStatusFilter = filter; this.page = 1; this.load(); }
 
   loadSalesStats() {
     this.api.get<any>('sales-stats').subscribe(res => {
@@ -684,9 +798,10 @@ export class CrudPageComponent implements OnInit {
   }
   loadProductLookups(after?: () => void) {
     if (this.lookupsLoaded) { after?.(); return; }
-    forkJoin({ categories: this.api.get<any[]>('categories'), warehouses: this.api.get<any[]>('warehouses') }).subscribe(({ categories, warehouses }) => {
+    forkJoin({ categories: this.api.get<any[]>('categories'), warehouses: this.api.get<any>('warehouses', { per_page: 200 }) }).subscribe(({ categories, warehouses }) => {
       this.categoryOptions = (categories || []).map((c: any) => ({ value: String(c.id), label: c.name }));
-      this.warehouseOptions = (warehouses || []).map((w: any) => ({ value: String(w.id), label: w.name }));
+      const warehouseRows = Array.isArray(warehouses) ? warehouses : (warehouses?.data || []);
+      this.warehouseOptions = warehouseRows.map((w: any) => ({ value: String(w.id), label: w.name }));
       this.lookupsLoaded = true;
       after?.();
     });
@@ -747,25 +862,35 @@ export class CrudPageComponent implements OnInit {
     return (parts[0][0] + (parts.length > 1 ? parts[parts.length - 1][0] : '')).toUpperCase();
   }
 
-  onSearchInput() { this.page = 1; this.warehousePage = 1; clearTimeout(this.searchTimer); this.searchTimer = setTimeout(() => this.load(), 350); }
+  onSearchInput() { this.page = 1; clearTimeout(this.searchTimer); this.searchTimer = setTimeout(() => this.load(), 350); }
 
   load() {
     const id = ++this.requestId; const endpoint = this.endpoint; this.loading = true; this.error = ''; this.rows = []; this.cdr.detectChanges();
     const params: Record<string, any> = this.search ? { search: this.search } : {};
-    if (endpoint === 'products' || endpoint === 'sales' || endpoint === 'expenses-income' || endpoint === 'users') { params['page'] = this.page; params['per_page'] = this.perPage; }
+    if (endpoint === 'products' || endpoint === 'carta' || endpoint === 'sales' || endpoint === 'expenses-income' || endpoint === 'users' || endpoint === 'warehouses') { params['page'] = this.page; params['per_page'] = this.perPage; }
+    if (endpoint === 'carta') {
+      params['type'] = this.cartaTab;
+      const f = this.cartaFilterApplied;
+      if (f.categoryId) params['category_id'] = f.categoryId;
+      if (this.cartaTab === 'plato' && f.area) params['area_preparacion'] = f.area;
+      if (f.visible !== '') params['active'] = f.visible;
+      if (f.priceRange[0] > 0) params['min_price'] = f.priceRange[0];
+      if (f.priceRange[1] < this.cartaPriceCeiling) params['max_price'] = f.priceRange[1];
+    }
     if (endpoint === 'sales' && this.salesPaymentFilter !== 'all') { params['payment_method'] = this.salesPaymentFilter; }
     if (endpoint === 'users' && this.userStatusFilter !== 'all') { params['status'] = this.userStatusFilter; }
+    if (endpoint === 'warehouses' && this.warehouseStatusFilter !== 'all') { params['active'] = this.warehouseStatusFilter === 'active'; }
     if (endpoint === 'expenses-income') {
       if (this.expensesTypeFilter !== 'all') params['type'] = this.expensesTypeFilter;
       const range = this.expensesDateRange();
       if (range.from) params['from'] = range.from;
       if (range.to) params['to'] = range.to;
     }
-    this.api.get<any>(endpoint, params).subscribe({
+    this.api.get<any>(this.apiPath(endpoint), params).subscribe({
       next: (res: any) => {
         if (id !== this.requestId || endpoint !== this.endpoint) return;
         this.rows = this.normalizeRows(res);
-        if (endpoint === 'products' || endpoint === 'sales' || endpoint === 'expenses-income' || endpoint === 'users') { this.total = Number(res?.total || 0); this.lastPage = Number(res?.last_page || 1); this.page = Number(res?.current_page || 1); }
+        if (endpoint === 'products' || endpoint === 'carta' || endpoint === 'sales' || endpoint === 'expenses-income' || endpoint === 'users' || endpoint === 'warehouses') { this.total = Number(res?.total || 0); this.lastPage = Number(res?.last_page || 1); this.page = Number(res?.current_page || 1); }
         this.loading = false; this.cdr.detectChanges();
         if (endpoint === 'expenses-income' && this.expensesStats) setTimeout(() => this.renderWeeklyFlowChart(), 0);
       },
@@ -773,11 +898,12 @@ export class CrudPageComponent implements OnInit {
     });
   }
   normalizeRows(res: any): any[] { if (this.endpoint === 'roles' && Array.isArray(res?.permissions)) { this.availablePermissions = res.permissions; this.openPermissionModules = new Set(this.availablePermissions.slice(0, 2).map(p => p.module)); } if (this.single) return res ? [res] : []; if (Array.isArray(res)) return res; if (Array.isArray(res?.data)) return res.data; if (Array.isArray(res?.roles)) return res.roles; return []; }
+  apiPath(endpoint: string) { return endpoint === 'carta' ? 'products' : endpoint; }
 
   openCreate() {
     if (this.endpoint === 'sales') return;
     if (this.endpoint === 'roles') { this.router.navigateByUrl('/app/roles/new'); return; }
-    if (this.endpoint === 'products' && !this.lookupsLoaded) { this.loadProductLookups(() => this.openCreate()); return; }
+    if ((this.endpoint === 'products' || this.endpoint === 'carta') && !this.lookupsLoaded) { this.loadProductLookups(() => this.openCreate()); return; }
     if (this.endpoint === 'users' && !this.userLookupsLoaded) { this.loadUserLookups(() => this.openCreate()); return; }
     this.cancelNewCategory();
     this.modalMode = 'create'; this.modalFields = this.fieldsFor(this.endpoint, true); this.modalModel = this.defaultsFor(this.endpoint); if (this.endpoint === 'roles') this.modalModel.permissions = []; if (this.endpoint === 'users') this.modalModel.roles = []; this.modalOpen = true;
@@ -786,20 +912,20 @@ export class CrudPageComponent implements OnInit {
     if (!row || row.editable === false || this.endpoint === 'sales') { if (row?.editable === false || this.endpoint === 'sales') this.messages.add({ severity: 'info', summary: 'Movimiento automatico', detail: 'Las ventas se registran desde el modulo POS.' }); return; }
     if (this.endpoint === 'roles') { this.router.navigateByUrl(`/app/roles/${row.id}/edit`); return; }
     if (this.endpoint === 'company-settings') { this.router.navigateByUrl('/app/company/edit'); return; }
-    if (this.endpoint === 'products' && !this.lookupsLoaded) { this.loadProductLookups(() => this.openEdit(row)); return; }
+    if ((this.endpoint === 'products' || this.endpoint === 'carta') && !this.lookupsLoaded) { this.loadProductLookups(() => this.openEdit(row)); return; }
     if (this.endpoint === 'users' && !this.userLookupsLoaded) { this.loadUserLookups(() => this.openEdit(row)); return; }
     this.cancelNewCategory();
     this.modalMode = 'edit'; this.modalFields = this.fieldsFor(this.endpoint, false);
     this.modalModel = { ...row, roles: this.endpoint === 'users' ? this.idArrayStr(row.roles) : this.ids(row.roles), permissions: this.endpoint === 'roles' ? this.idArray(row.permissions) : this.ids(row.permissions) };
-    if (this.endpoint === 'products') { this.modalModel.category_id = String(row.category_id ?? row.category?.id ?? ''); this.modalModel.warehouse_id = String(row.warehouse_id ?? row.warehouse?.id ?? ''); }
+    if (this.endpoint === 'products' || this.endpoint === 'carta') { this.modalModel.category_id = String(row.category_id ?? row.category?.id ?? ''); this.modalModel.warehouse_id = String(row.warehouse_id ?? row.warehouse?.id ?? ''); }
     for (const field of this.modalFields) { if (field.type === 'date' && this.modalModel[field.key]) this.modalModel[field.key] = this.parseDate(this.modalModel[field.key]); }
     this.modalOpen = true;
   }
   openDelete(row: any) { if (row?.editable === false || this.endpoint === 'sales') { this.messages.add({ severity: 'info', summary: 'Movimiento automatico', detail: 'Las ventas no se eliminan desde este modulo.' }); return; } this.confirmation.confirm({ header: 'Confirmar eliminacion', message: `Deseas eliminar o desactivar ${row?.name || row?.email || 'este registro'}?`, icon: 'pi pi-exclamation-triangle', acceptLabel: 'Eliminar', rejectLabel: 'Cancelar', acceptButtonStyleClass: 'p-button-danger', accept: () => this.confirmDelete(row) }); }
   closeModal() { this.modalOpen = false; this.modalModel = {}; this.cancelNewCategory(); }
 
-  saveModal() { const body = this.payloadFor(this.endpoint, this.modalModel); const req = this.single ? this.api.put<any>(this.endpoint, body) : (this.modalMode === 'create' ? this.api.post<any>(this.endpoint, body) : this.api.put<any>(`${this.endpoint}/${this.modalModel.id}`, body)); req.subscribe({ next: () => { this.messages.add({ severity: 'success', summary: 'Guardado', detail: 'Registro guardado correctamente.' }); this.closeModal(); this.load(); if (this.endpoint === 'company-settings') this.branding.refresh(); if (this.endpoint === 'products') this.loadProductStats(); if (this.endpoint === 'warehouses') this.loadWarehouseStats(); if (this.endpoint === 'expenses-income') this.loadExpensesStats(); if (this.endpoint === 'users') this.loadUserStats(); }, error: (err: any) => { this.error = err?.error?.message || 'No se pudo guardar.'; this.messages.add({ severity: 'error', summary: 'Error', detail: this.error }); } }); }
-  confirmDelete(row: any) { this.api.delete(`${this.endpoint}/${row.id}`).subscribe({ next: () => { this.messages.add({ severity: 'success', summary: 'Eliminado', detail: 'Registro eliminado o desactivado.' }); this.load(); if (this.endpoint === 'products') this.loadProductStats(); if (this.endpoint === 'warehouses') this.loadWarehouseStats(); if (this.endpoint === 'expenses-income') this.loadExpensesStats(); if (this.endpoint === 'users') this.loadUserStats(); if (this.endpoint === 'roles') this.loadRoleStats(); }, error: (err: any) => { this.error = err?.error?.message || 'No se pudo eliminar.'; this.messages.add({ severity: 'error', summary: 'Error', detail: this.error }); } }); }
+  saveModal() { const body = this.payloadFor(this.endpoint, this.modalModel); const path = this.apiPath(this.endpoint); const req = this.single ? this.api.put<any>(path, body) : (this.modalMode === 'create' ? this.api.post<any>(path, body) : this.api.put<any>(`${path}/${this.modalModel.id}`, body)); req.subscribe({ next: () => { this.messages.add({ severity: 'success', summary: 'Guardado', detail: 'Registro guardado correctamente.' }); this.closeModal(); this.load(); if (this.endpoint === 'company-settings') this.branding.refresh(); if (this.endpoint === 'products') this.loadProductStats(); if (this.endpoint === 'carta') { this.loadProductStats(); this.loadCartaStats(); } if (this.endpoint === 'warehouses') this.loadWarehouseStats(); if (this.endpoint === 'expenses-income') this.loadExpensesStats(); if (this.endpoint === 'users') this.loadUserStats(); }, error: (err: any) => { this.error = err?.error?.message || 'No se pudo guardar.'; this.messages.add({ severity: 'error', summary: 'Error', detail: this.error }); } }); }
+  confirmDelete(row: any) { this.api.delete(`${this.apiPath(this.endpoint)}/${row.id}`).subscribe({ next: () => { this.messages.add({ severity: 'success', summary: 'Eliminado', detail: 'Registro eliminado o desactivado.' }); this.load(); if (this.endpoint === 'products') this.loadProductStats(); if (this.endpoint === 'carta') { this.loadProductStats(); this.loadCartaStats(); } if (this.endpoint === 'warehouses') this.loadWarehouseStats(); if (this.endpoint === 'expenses-income') this.loadExpensesStats(); if (this.endpoint === 'users') this.loadUserStats(); if (this.endpoint === 'roles') this.loadRoleStats(); }, error: (err: any) => { this.error = err?.error?.message || 'No se pudo eliminar.'; this.messages.add({ severity: 'error', summary: 'Error', detail: this.error }); } }); }
 
   onImageDragOver(event: DragEvent) { event.preventDefault(); }
   onImageDrop(event: DragEvent) { event.preventDefault(); const file = event.dataTransfer?.files?.[0]; if (file) this.uploadProductImage(file); }
@@ -858,10 +984,30 @@ export class CrudPageComponent implements OnInit {
       'expenses-income': movementFields,
       'company-settings': [{ key: 'name', label: 'Empresa' }, { key: 'ruc', label: 'RUC' }, { key: 'phone', label: 'Celular' }, { key: 'address', label: 'Direccion' }, { key: 'slogan', label: 'Eslogan' }, { key: 'business_type', label: 'Modo del sistema', type: 'select', options: [{ value: 'market', label: 'Mercado' }, { value: 'restaurant', label: 'Restaurante' }] }, { key: 'igv_percent', label: 'IGV %', type: 'number' }, { key: 'default_tip', label: 'Propina default', type: 'number' }, { key: 'voucher_series', label: 'Serie' }, { key: 'voucher_start_number', label: 'Numero inicial', type: 'number' }, { key: 'ticket_width', label: 'Ticket 58/80' }]
     };
+    if (endpoint === 'carta') {
+      const isDish = this.cartaTab === 'plato';
+      return [
+        { key: 'sku', label: 'SKU' },
+        { key: 'name', label: isDish ? 'Nombre del plato' : 'Nombre del articulo' },
+        { key: 'category_id', label: 'Categoria', type: 'select', options: this.categoryOptions },
+        ...(isDish
+          ? [{ key: 'area_preparacion', label: 'Area de preparacion', type: 'select', options: [{ value: 'cocina', label: 'Cocina' }, { value: 'bar', label: 'Bar' }] } as Field]
+          : [{ key: 'warehouse_id', label: 'Almacen', type: 'select', options: this.warehouseOptions } as Field]),
+        { key: 'sale_price', label: 'Precio de venta', type: 'number' },
+        { key: 'cost', label: 'Costo', type: 'number' },
+        ...(isDish ? [] : [{ key: 'stock', label: 'Stock', type: 'number' } as Field, { key: 'min_stock', label: 'Stock minimo', type: 'number' } as Field]),
+        { key: 'image_path', label: isDish ? 'Imagen del plato' : 'Imagen del articulo', type: 'image' },
+        commonActive,
+      ];
+    }
     return map[endpoint] || [{ key: 'name', label: 'Nombre' }, commonActive];
   }
   defaultsFor(endpoint: string) {
     if (endpoint === 'products') return { active: true, category_id: this.categoryOptions[0]?.value || '', warehouse_id: this.warehouseOptions[0]?.value || '', stock: 0, min_stock: 0, cost: 0, sale_price: 0 };
+    if (endpoint === 'carta') {
+      const isDish = this.cartaTab === 'plato';
+      return { active: true, type: this.cartaTab, category_id: this.categoryOptions[0]?.value || '', warehouse_id: isDish ? '' : (this.warehouseOptions[0]?.value || ''), area_preparacion: isDish ? 'cocina' : null, stock: 0, min_stock: 0, cost: 0, sale_price: 0 };
+    }
     if (endpoint === 'expenses-income') return { type: 'expense', category: 'Gastos operativos', description: '', amount: 0, date: new Date(), payment_method: 'cash', observation: '' };
     return { active: true };
   }
@@ -873,6 +1019,7 @@ export class CrudPageComponent implements OnInit {
     delete body.warehouse;
     if (endpoint === 'users' || endpoint === 'roles') { body.roles = this.csv(body.roles); body.permissions = this.csv(body.permissions); if (!body.password) delete body.password; }
     if (endpoint === 'products') { body.category_id = Number(body.category_id); body.warehouse_id = Number(body.warehouse_id); }
+    if (endpoint === 'carta') { body.category_id = Number(body.category_id); body.warehouse_id = body.warehouse_id ? Number(body.warehouse_id) : null; body.type = this.cartaTab; delete body.category; }
     return body;
   }  ids(rows: any[]) { return Array.isArray(rows) ? rows.map(r => r.id).join(',') : ''; }
   idArray(rows: any[]) { return Array.isArray(rows) ? rows.map(r => Number(r.id)).filter(Boolean) : []; }
@@ -898,7 +1045,7 @@ export class CrudPageComponent implements OnInit {
       'company-settings': [{ key: 'name', label: 'Empresa' }, { key: 'ruc', label: 'RUC' }, { key: 'phone', label: 'Celular' }, { key: 'address', label: 'Direccion' }, { key: 'business_type', label: 'Modo del sistema' }, { key: 'igv_percent', label: 'IGV %' }, { key: 'voucher_series', label: 'Serie' }, { key: 'ticket_width', label: 'Ticket mm' }, { key: 'license_key', label: 'Codigo de licencia (Escritorio)' }]
     };
     return map[endpoint] || [{ key: 'name', label: 'Nombre' }, { key: 'active', label: 'Estado', type: 'status' }];
-  }  subtitleFor(endpoint: string) { const map: Record<string, string> = { products: 'Catalogo visual de platos, bebidas, precios y stock.', users: 'Usuarios del sistema y sus roles asignados.', roles: 'Perfiles de acceso y permisos configurados.', warehouses: 'Almacenes activos y disponibilidad general. Gestione la distribucion de inventario en tiempo real.', sales: 'Historial de ventas y comprobantes generados.', 'expenses-income': 'Gestione el flujo de caja, ingresos automaticos y movimientos manuales.', 'company-settings': 'Datos comerciales, IGV y configuracion de comprobantes.' }; return map[endpoint] || 'Gestion del modulo.'; }
+  }  subtitleFor(endpoint: string) { const map: Record<string, string> = { products: 'Catalogo visual de productos, precios y stock.', carta: 'Gestiona tu carta digital: platos, bebidas y articulos de consumo interno.', users: 'Usuarios del sistema y sus roles asignados.', roles: 'Perfiles de acceso y permisos configurados.', warehouses: 'Almacenes activos y disponibilidad general. Gestione la distribucion de inventario en tiempo real.', sales: 'Historial de ventas y comprobantes generados.', 'expenses-income': 'Gestione el flujo de caja, ingresos automaticos y movimientos manuales.', 'company-settings': 'Datos comerciales, IGV y configuracion de comprobantes.' }; return map[endpoint] || 'Gestion del modulo.'; }
   parseDate(value: unknown): Date | null {
     if (!value) return null;
     if (value instanceof Date) return value;

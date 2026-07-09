@@ -92,7 +92,7 @@ class SaleController extends Controller
         // segun la cantidad de lineas variables (items + propina + eslogan + direccion)
         // para evitar que el ticket se corte a una segunda pagina. Calibrado empiricamente
         // contando paginas reales con dompdf para distintas alturas de pagina.
-        $lineCount = $sale->items->count() + ($sale->tip > 0 ? 1 : 0) + ($copy === 'customer' && $company->slogan ? 1 : 0) + ($company->address ? 1 : 0);
+        $lineCount = $sale->items->count() + ($sale->tip > 0 ? 1 : 0) + ($sale->discount_amount > 0 ? 1 : 0) + ($copy === 'customer' && $company->slogan ? 1 : 0) + ($company->address ? 1 : 0);
         $heightMm = max(90, 108 + $lineCount * 5);
         $mmToPt = 2.83465;
 

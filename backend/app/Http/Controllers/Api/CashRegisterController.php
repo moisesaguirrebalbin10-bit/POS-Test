@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Events\CashRegisterStatusChanged;
 use App\Http\Controllers\Controller;
 use App\Models\CashRegister;
+use App\Models\Sale;
 use App\Services\ActivityLogger;
 use App\Support\Broadcaster;
 use Illuminate\Http\Request;
@@ -31,6 +32,7 @@ class CashRegisterController extends Controller
             'is_open' => (bool) $current,
             'current_id' => $current?->id,
             'estimated_balance' => $estimatedBalance,
+            'opened_at' => $current?->opened_at,
         ];
     }
 
@@ -54,6 +56,44 @@ class CashRegisterController extends Controller
     public function show(CashRegister $cashRegister)
     {
         return $cashRegister->load('movements');
+    }
+
+    public function turno(CashRegister $cashRegister)
+    {
+        $sales = Sale::with(['cashier', 'tableOrder', 'items'])
+            ->where('cash_register_id', $cashRegister->id)
+            ->withCount('items')
+            ->orderByDesc('created_at')
+            ->get();
+
+        $orders = $sales->map(fn (Sale $sale) => [
+            'id' => $sale->id,
+            'code' => $sale->voucher_number,
+            'type' => $sale->tableOrder->type ?? 'venta',
+            'type_label' => $sale->tableOrder?->typeLabel() ?? 'Venta',
+            'reference' => $sale->table_name ?? $sale->customer_name,
+            'items_count' => $sale->items_count,
+            'payment_method' => $sale->payment_method,
+            'total' => $sale->total,
+            'cashier' => $sale->cashier?->name,
+            'created_at' => $sale->created_at,
+        ]);
+
+        $expenses = $cashRegister->movements()->where('type', 'expense')->latest()->get()
+            ->map(fn ($m) => [
+                'id' => $m->id,
+                'category' => $m->category,
+                'description' => $m->description,
+                'amount' => $m->amount,
+                'created_at' => $m->created_at,
+            ]);
+
+        return [
+            'orders' => $orders,
+            'orders_total' => $orders->count(),
+            'expenses' => $expenses,
+            'expenses_total' => (float) $expenses->sum('amount'),
+        ];
     }
 
     public function update(Request $request, CashRegister $cashRegister)

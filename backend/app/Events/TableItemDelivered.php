@@ -14,7 +14,7 @@ class TableItemDelivered implements ShouldBroadcast
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    public int $tableId;
+    public ?int $tableId;
     public int $tableOrderId;
     public int $itemId;
     public bool $allDelivered;

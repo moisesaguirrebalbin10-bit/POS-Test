@@ -37,6 +37,7 @@ class CompanySettingController extends Controller
         return [
             'name' => $company->name, 'slogan' => $company->slogan, 'logo_path' => $company->logo_path,
             'business_type' => $company->business_type, 'business_type_selected_at' => $company->business_type_selected_at,
+            'igv_percent' => $company->igv_percent,
         ];
     }
 

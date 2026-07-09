@@ -8,6 +8,11 @@ import { LicenseActivationComponent } from './pages/license-activation.component
 import { DashboardComponent } from './pages/dashboard.component';
 import { PosComponent } from './pages/pos.component';
 import { MesasComponent } from './pages/mesas.component';
+import { OrdersComponent } from './pages/orders.component';
+import { OrderBuilderComponent } from './pages/order-builder.component';
+import { KitchenComponent } from './pages/kitchen.component';
+import { ReservationsComponent } from './pages/reservations.component';
+import { InventoryComponent } from './pages/inventory.component';
 import { CrudPageComponent } from './pages/crud-page.component';
 import { RoleEditComponent } from './pages/role-edit.component';
 import { CompanyEditComponent } from './pages/company-edit.component';
@@ -38,6 +43,11 @@ export const routes: Routes = [
       { path: 'dashboard', component: DashboardComponent },
       { path: 'pos', component: PosComponent },
       { path: 'tables', component: MesasComponent },
+      { path: 'orders', component: OrdersComponent },
+      { path: 'orders/new', component: OrderBuilderComponent },
+      { path: 'kitchen', component: KitchenComponent },
+      { path: 'reservations', component: ReservationsComponent },
+      { path: 'inventory', component: InventoryComponent },
       { path: 'users', component: CrudPageComponent, data: { title: 'Usuarios', endpoint: 'users' } },
       { path: 'roles', component: CrudPageComponent, data: { title: 'Roles', endpoint: 'roles' } },
       { path: 'roles/new', component: RoleEditComponent },
@@ -46,6 +56,7 @@ export const routes: Routes = [
       { path: 'company/edit', component: CompanyEditComponent },
       { path: 'warehouses', component: CrudPageComponent, data: { title: 'Almacenes', endpoint: 'warehouses' } },
       { path: 'products', component: CrudPageComponent, data: { title: 'Productos', endpoint: 'products' } },
+      { path: 'carta', component: CrudPageComponent, data: { title: 'Carta Digital', endpoint: 'carta' } },
       { path: 'sales', component: CrudPageComponent, data: { title: 'Ventas', endpoint: 'sales' } },
       { path: 'cash', component: CashComponent },
       { path: 'movements', component: CrudPageComponent, data: { title: 'Ingresos y Egresos', endpoint: 'expenses-income' } },

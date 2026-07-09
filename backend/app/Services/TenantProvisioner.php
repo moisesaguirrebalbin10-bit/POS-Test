@@ -50,6 +50,8 @@ class TenantProvisioner
             ['logs.view', 'Registros', 'Ver registros de actividad'],
             ['devices.manage', 'Equipos', 'Configurar impresoras'],
             ['tables.manage', 'Mesas', 'Gestionar mesas y pedidos (modo Restaurante)'],
+            ['reservations.manage', 'Reservas', 'Gestionar reservas de mesas (modo Restaurante)'],
+            ['inventory.manage', 'Inventario', 'Gestionar insumos, articulos, recetas y kardex (modo Restaurante)'],
         ];
     }
 

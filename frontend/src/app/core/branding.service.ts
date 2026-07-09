@@ -10,6 +10,7 @@ export class BrandingService {
   slogan = signal('');
   logoPath = signal<string | null>(null);
   businessType = signal<'market' | 'restaurant'>('market');
+  igvPercent = signal<number>(18);
 
   load() {
     if (this.loaded) return;
@@ -20,6 +21,7 @@ export class BrandingService {
         this.slogan.set(settings?.slogan || '');
         this.logoPath.set(settings?.logo_path || null);
         this.businessType.set(settings?.business_type === 'restaurant' ? 'restaurant' : 'market');
+        this.igvPercent.set(Number(settings?.igv_percent ?? 18));
       },
       error: () => { this.loaded = false; }
     });

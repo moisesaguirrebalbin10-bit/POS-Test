@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\CashMovement;
+use App\Models\CashRegister;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\Sale;
@@ -23,10 +24,40 @@ class DashboardController extends Controller
             'payment_methods' => Sale::select('payment_method', DB::raw('count(*) as count, sum(total) as total'))->groupBy('payment_method')->get(),
             'income_expense' => CashMovement::selectRaw('date(created_at) as date, type, sum(amount) as total')->groupBy('date', 'type')->orderBy('date')->limit(30)->get(),
             'low_stock_by_category' => Product::join('categories', 'categories.id', '=', 'products.category_id')
+                ->where(fn ($q) => $q->whereNull('products.type')->orWhere('products.type', '!=', 'plato'))
                 ->whereColumn('products.stock', '<=', 'products.min_stock')
                 ->select('categories.name', DB::raw('count(*) as total'))
                 ->groupBy('categories.name')->get(),
+            'last_sale' => Sale::latest()->first(['id', 'created_at', 'total']),
+            'sales_by_hour' => $this->salesByHour(),
         ];
+    }
+
+    private function salesByHour(): array
+    {
+        $openRegister = CashRegister::where('status', 'open')->latest()->first();
+        $now = now();
+        $start = $openRegister ? Carbon::parse($openRegister->opened_at) : $now->copy()->startOfDay();
+        // Un turno olvidado abierto desde un dia anterior no debe generar un grafico de 30+ horas;
+        // en ese caso mostramos solo lo transcurrido hoy.
+        if ($start->diffInHours($now) > 20) {
+            $start = $now->copy()->startOfDay();
+        }
+
+        $sales = Sale::where('created_at', '>=', $start)->get(['created_at', 'total']);
+
+        $points = [];
+        $running = 0.0;
+        $cursor = $start->copy()->minute(0)->second(0);
+        while ($cursor->lte($now)) {
+            $bucketEnd = $cursor->copy()->addHour();
+            $running += (float) $sales->filter(fn ($s) => $s->created_at->gte($cursor) && $s->created_at->lt($bucketEnd))->sum('total');
+            $points[] = ['hour' => $cursor->format('H:i'), 'total' => round($running, 2)];
+            $cursor = $bucketEnd;
+        }
+        $points[] = ['hour' => $now->format('H:i'), 'total' => round((float) $sales->sum('total'), 2)];
+
+        return $points;
     }
 
     public function trends(Request $request)
@@ -95,7 +126,7 @@ class DashboardController extends Controller
     private function summary(): array
     {
         return [
-            'low_stock_count' => Product::whereColumn('stock', '<=', 'min_stock')->count(),
+            'low_stock_count' => Product::where(fn ($q) => $q->whereNull('type')->orWhere('type', '!=', 'plato'))->whereColumn('stock', '<=', 'min_stock')->count(),
         ];
     }
 

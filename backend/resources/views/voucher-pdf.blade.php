@@ -62,6 +62,11 @@
 
   <div class="line"></div>
 
+  @if ($sale->discount_amount > 0)
+  <table class="row">
+    <tr><td>Descuento ({{ rtrim(rtrim(number_format($sale->discount_percent, 2), '0'), '.') }}%):</td><td class="right bold">- S/ {{ number_format($sale->discount_amount, 2) }}</td></tr>
+  </table>
+  @endif
   <table class="row">
     <tr><td>Subtotal:</td><td class="right bold">S/ {{ number_format($sale->subtotal, 2) }}</td></tr>
   </table>

@@ -123,12 +123,6 @@ type StaffForm = { id: number | null; name: string; email: string; password: str
   </section>`,
   styles: [`
     .companies-toolbar { grid-template-columns: auto 1fr; align-items: center; }
-    .switch { position: relative; display: inline-flex; align-items: center; width: 40px; height: 22px; }
-    .switch input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; z-index: 1; }
-    .switch-track { position: absolute; inset: 0; background: #cbd5e1; border-radius: 999px; transition: background .15s; pointer-events: none; }
-    .switch input:checked ~ .switch-track { background: #16a34a; }
-    .switch-thumb { position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.3); transition: transform .15s; pointer-events: none; }
-    .switch input:checked ~ .switch-thumb { transform: translateX(18px); }
     .staff-audit-banner { flex-direction: row; align-items: center; text-align: left; margin-top: 18px; gap: 16px; padding: 18px 20px; }
     .staff-audit-banner p { margin: 4px 0 0; }
     .btn-outline-audit { flex: none; padding: 10px 16px; border-radius: 8px; border: 1px solid rgba(255,255,255,.3); color: #fff; text-decoration: none; font-size: 13px; font-weight: 700; }

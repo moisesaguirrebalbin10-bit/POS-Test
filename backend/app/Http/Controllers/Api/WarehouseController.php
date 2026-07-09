@@ -13,9 +13,13 @@ use Illuminate\Validation\Rule;
 
 class WarehouseController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        return Warehouse::withCount('products')->withSum('products', 'stock')->get();
+        return Warehouse::withCount('products')->withSum('products', 'stock')
+            ->when($request->search, fn ($q, $s) => $q->where(fn ($w) => $w->where('name', 'like', "%$s%")->orWhere('description', 'like', "%$s%")))
+            ->when($request->filled('active'), fn ($q) => $q->where('active', $request->boolean('active')))
+            ->orderBy('name')
+            ->paginate($request->integer('per_page') ?: 8);
     }
 
     public function stats()

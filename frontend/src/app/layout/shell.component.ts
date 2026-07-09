@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, ElementRef, ViewChild, inject } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, ViewChild, effect, inject } from '@angular/core';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { filter } from 'rxjs';
 import { MatToolbarModule } from '@angular/material/toolbar';
@@ -13,13 +13,15 @@ import { AuthService } from '../core/auth.service';
 import { BrandingService } from '../core/branding.service';
 import { RealtimeService } from '../core/realtime.service';
 import { ApiService } from '../core/api.service';
+import { ReservationAlertsService } from '../core/reservation-alerts.service';
 import { BusinessTypeOnboardingComponent } from './business-type-onboarding.component';
+import { ReservationAlertsComponent } from './reservation-alerts.component';
 
 type ThemeMode = 'light' | 'dark' | 'system';
 
 @Component({
   selector: 'app-shell', standalone: true,
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, MatToolbarModule, MatSidenavModule, MatIconModule, MatButtonModule, MatMenuModule, MatDividerModule, ImageModule, BusinessTypeOnboardingComponent],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, MatToolbarModule, MatSidenavModule, MatIconModule, MatButtonModule, MatMenuModule, MatDividerModule, ImageModule, BusinessTypeOnboardingComponent, ReservationAlertsComponent],
   template: `
   <mat-sidenav-container class="shell">
     <mat-sidenav mode="side" opened class="nav">
@@ -33,11 +35,20 @@ type ThemeMode = 'light' | 'dark' | 'system';
           <small>{{branding.businessType() === 'restaurant' ? 'Gestion de Restaurante' : 'Gestion de Mercado'}}</small>
         </div>
       </div>
-      <nav class="nav-links">
-        @for (item of visibleMenu(); track item.path) {
-          <a class="nav-link" [routerLink]="item.path" routerLinkActive="active"><mat-icon>{{item.icon}}</mat-icon><span>{{item.label}}</span></a>
-        }
-      </nav>
+      <div class="nav-scroll">
+        <span class="nav-section-label">Principal</span>
+        <nav class="nav-links">
+          @for (item of menuBySection('principal'); track item.path) {
+            <a class="nav-link" [routerLink]="item.path" routerLinkActive="active"><mat-icon>{{item.icon}}</mat-icon><span>{{item.label}}</span></a>
+          }
+        </nav>
+        <span class="nav-section-label">Gestion</span>
+        <nav class="nav-links">
+          @for (item of menuBySection('gestion'); track item.path) {
+            <a class="nav-link" [routerLink]="item.path" routerLinkActive="active"><mat-icon>{{item.icon}}</mat-icon><span>{{item.label}}</span></a>
+          }
+        </nav>
+      </div>
       <div class="nav-user-card">
         <span class="nav-user-avatar"><mat-icon>person</mat-icon></span>
         <div class="nav-user-info">
@@ -76,26 +87,38 @@ type ThemeMode = 'light' | 'dark' | 'system';
       <main><router-outlet /></main>
     </mat-sidenav-content>
   </mat-sidenav-container>
-  <app-business-type-onboarding [open]="showOnboarding" [saving]="savingOnboarding" (confirm)="confirmOnboarding($event)" />`
+  <app-business-type-onboarding [open]="showOnboarding" [saving]="savingOnboarding" (confirm)="confirmOnboarding($event)" />
+  <app-reservation-alerts />`
 })
 export class ShellComponent implements AfterViewInit {
   auth = inject(AuthService); router = inject(Router); user = this.auth.user(); branding = inject(BrandingService);
   realtime = inject(RealtimeService); messages = inject(MessageService); api = inject(ApiService);
+  reservationAlerts = inject(ReservationAlertsService);
   theme: ThemeMode = (localStorage.getItem('pos-theme') as ThemeMode) || 'light';
   private media = window.matchMedia('(prefers-color-scheme: dark)');
   showOnboarding = false;
   savingOnboarding = false;
   @ViewChild('scrollContent', { read: ElementRef }) scrollContent?: ElementRef<HTMLElement>;
-  menu: { path: string; icon: string; label: string; permission?: string; businessType?: 'restaurant' }[] = [
-    { path: '/app/dashboard', icon: 'dashboard', label: 'Dashboard' }, { path: '/app/pos', icon: 'point_of_sale', label: 'POS' },
-    { path: '/app/tables', icon: 'table_bar', label: 'Mesas', permission: 'tables.manage', businessType: 'restaurant' },
-    { path: '/app/products', icon: 'inventory_2', label: 'Productos' }, { path: '/app/warehouses', icon: 'warehouse', label: 'Almacenes' },
-    { path: '/app/sales', icon: 'receipt_long', label: 'Ventas' }, { path: '/app/cash', icon: 'payments', label: 'Caja' },
-    { path: '/app/movements', icon: 'swap_vert', label: 'Ingresos/Egresos' }, { path: '/app/reports', icon: 'bar_chart', label: 'Reportes' },
-    { path: '/app/users', icon: 'group', label: 'Usuarios' }, { path: '/app/roles', icon: 'admin_panel_settings', label: 'Roles' },
-    { path: '/app/company', icon: 'store', label: 'Empresa' }, { path: '/app/system-branding', icon: 'palette', label: 'Nombre y Logo' },
-    { path: '/app/device-settings', icon: 'print', label: 'Equipos', permission: 'devices.manage' },
-    { path: '/app/activity-logs', icon: 'history', label: 'Registros', permission: 'logs.view' }
+  menu: { path: string; icon: string; label: string; permission?: string; businessType?: 'restaurant' | 'market'; section: 'principal' | 'gestion' }[] = [
+    { path: '/app/dashboard', icon: 'dashboard', label: 'Dashboard', section: 'principal' },
+    { path: '/app/pos', icon: 'point_of_sale', label: 'POS', businessType: 'market', section: 'principal' },
+    { path: '/app/orders', icon: 'receipt_long', label: 'Ordenes', permission: 'tables.manage', businessType: 'restaurant', section: 'principal' },
+    { path: '/app/tables', icon: 'table_bar', label: 'Mesas', permission: 'tables.manage', businessType: 'restaurant', section: 'principal' },
+    { path: '/app/carta', icon: 'restaurant_menu', label: 'Carta', businessType: 'restaurant', section: 'principal' },
+    { path: '/app/products', icon: 'inventory_2', label: 'Productos', businessType: 'market', section: 'principal' },
+    { path: '/app/warehouses', icon: 'warehouse', label: 'Almacenes', businessType: 'market', section: 'gestion' },
+    { path: '/app/inventory', icon: 'inventory', label: 'Inventario', permission: 'inventory.manage', businessType: 'restaurant', section: 'gestion' },
+    { path: '/app/sales', icon: 'receipt_long', label: 'Ventas', section: 'gestion' },
+    { path: '/app/cash', icon: 'payments', label: 'Caja', section: 'gestion' },
+    { path: '/app/movements', icon: 'swap_vert', label: 'Ingresos/Egresos', section: 'gestion' },
+    { path: '/app/reservations', icon: 'event_available', label: 'Reservas', permission: 'reservations.manage', businessType: 'restaurant', section: 'gestion' },
+    { path: '/app/reports', icon: 'bar_chart', label: 'Reportes', section: 'gestion' },
+    { path: '/app/users', icon: 'group', label: 'Usuarios', section: 'gestion' },
+    { path: '/app/roles', icon: 'admin_panel_settings', label: 'Roles', section: 'gestion' },
+    { path: '/app/company', icon: 'store', label: 'Empresa', section: 'gestion' },
+    { path: '/app/system-branding', icon: 'palette', label: 'Nombre y Logo', section: 'gestion' },
+    { path: '/app/device-settings', icon: 'print', label: 'Equipos', permission: 'devices.manage', section: 'gestion' },
+    { path: '/app/activity-logs', icon: 'history', label: 'Registros', permission: 'logs.view', section: 'gestion' }
   ];
 
   visibleMenu() {
@@ -103,6 +126,10 @@ export class ShellComponent implements AfterViewInit {
       (!item.permission || this.hasPermission(item.permission)) &&
       (!item.businessType || this.branding.businessType() === item.businessType)
     );
+  }
+
+  menuBySection(section: 'principal' | 'gestion') {
+    return this.visibleMenu().filter(item => item.section === section);
   }
   hasPermission(key: string): boolean {
     return !!this.user?.roles?.some((role: any) => role.permissions?.some((p: any) => p.key === key));
@@ -120,6 +147,12 @@ export class ShellComponent implements AfterViewInit {
     if (!this.user?.company?.business_type_selected_at && this.hasPermission('settings.update')) {
       this.showOnboarding = true;
     }
+
+    effect(() => {
+      if (this.branding.businessType() === 'restaurant' && this.hasPermission('reservations.manage')) {
+        this.reservationAlerts.start();
+      }
+    });
 
     this.router.events.pipe(filter(e => e instanceof NavigationEnd)).subscribe(() => this.resetScroll());
   }

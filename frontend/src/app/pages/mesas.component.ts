@@ -14,11 +14,13 @@ import { ApiService } from '../core/api.service';
 import { RealtimeService } from '../core/realtime.service';
 import { VoucherCopy, VoucherPdfService } from '../core/voucher-pdf.service';
 import { PdfPreviewDialogComponent } from '../shared/pdf-preview-dialog.component';
+import { minutesUntil } from '../core/lima-time';
 
 type ItemRow = { id: number; product_id: number; product_name: string; quantity: number | string; unit_price: number | string; notes: string | null; delivered_at: string | null };
 type RoundRow = { id: number; sent_at: string; completed_at: string | null; items: ItemRow[] };
 type OrderRow = { id: number; status: string; opened_at: string; rounds: RoundRow[] };
-type TableRow = { id: number; name: string; status: string; capacity: number; active_order: OrderRow | null };
+type NextReservation = { id: number; customer_name: string; party_size: number; reserved_at: string; status: string };
+type TableRow = { id: number; name: string; status: string; capacity: number; zone: string | null; has_upcoming_reservation: boolean; next_reservation: NextReservation | null; active_order: OrderRow | null };
 type Product = { id: number; name: string; sku: string; sale_price: number | string; stock: number | string };
 type PickLine = { product_id: number; name: string; sale_price: number; quantity: number };
 
@@ -74,6 +76,9 @@ type PickLine = { product_id: number; name: string; sale_price: number; quantity
                   </mat-menu>
                 </span>
               </div>
+              @if (t.has_upcoming_reservation && t.next_reservation) {
+                <span class="mesa-reserved-badge"><mat-icon>event_available</mat-icon>Reservada {{reservationTime(t.next_reservation.reserved_at)}}</span>
+              }
               @if (t.active_order) {
                 <div class="mesa-card-body">
                   <span class="mesa-timer-box"><mat-icon>schedule</mat-icon><span><small>TIEMPO</small><b>{{elapsed(t.active_order.opened_at, t.status === 'awaiting_payment' ? lastCompletedAt(t.active_order) : null)}}</b></span></span>
@@ -100,6 +105,13 @@ type PickLine = { product_id: number; name: string; sale_price: number; quantity
     <p-dialog [(visible)]="addTableOpen" [modal]="true" [dismissableMask]="true" [style]="{ width: 'min(360px, 92vw)' }" [header]="tableModalMode === 'create' ? 'Nueva mesa' : 'Editar mesa'">
       <mat-form-field appearance="outline"><mat-label>Nombre</mat-label><input matInput [(ngModel)]="newTableName" placeholder="Mesa 5" (keyup.enter)="saveTable()"></mat-form-field>
       <mat-form-field appearance="outline"><mat-label>Capacidad (personas)</mat-label><input matInput type="number" min="1" [(ngModel)]="newTableCapacity" (keyup.enter)="saveTable()"></mat-form-field>
+      <mat-form-field appearance="outline">
+        <mat-label>Zona (opcional)</mat-label>
+        <input matInput [(ngModel)]="newTableZone" placeholder="Salon principal" list="zone-options" (keyup.enter)="saveTable()">
+      </mat-form-field>
+      <datalist id="zone-options">
+        @for (z of knownZones(); track z) { <option [value]="z"></option> }
+      </datalist>
       <ng-template pTemplate="footer">
         <div class="modal-actions">
           <button mat-stroked-button (click)="addTableOpen = false">Cancelar</button>
@@ -233,6 +245,8 @@ type PickLine = { product_id: number; name: string; sale_price: number; quantity
     .mesa-status-free { background: #e8f7f1; color: #047857; }
     .mesa-status-occupied { background: #fde8e8; color: #c22a2a; }
     .mesa-status-awaiting_payment { background: #fff1e0; color: #c2410c; }
+    .mesa-reserved-badge { display: inline-flex; align-items: center; gap: 4px; align-self: flex-start; padding: 3px 9px; border-radius: 999px; font-size: 11px; font-weight: 700; background: #fef3c7; color: #92400e; }
+    .mesa-reserved-badge mat-icon { font-size: 14px; width: 14px; height: 14px; }
     .mesa-card-body { display: flex; flex-direction: column; gap: 4px; color: var(--muted); font-size: 13px; }
     .mesa-timer-box { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 8px; background: var(--surface-2); }
     .mesa-timer-box mat-icon { color: var(--muted); }
@@ -272,7 +286,8 @@ type PickLine = { product_id: number; name: string; sale_price: number; quantity
     .round-item span { flex: 1; }
     .round-item.delivered span { text-decoration: line-through; color: var(--muted); }
     .mesa-detail-actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
-    .pay-btn { background: #16a34a !important; color: #fff !important; }
+    .pay-btn { background: var(--primary) !important; color: #fff !important; }
+    .pay-btn:hover { background: var(--primary-strong) !important; }
 
     .round-picker { display: flex; flex-direction: column; gap: 12px; }
     .round-picker-list { display: flex; flex-direction: column; gap: 4px; max-height: 220px; overflow: auto; border: 1px solid var(--soft-line); border-radius: 8px; }
@@ -298,7 +313,7 @@ export class MesasComponent implements OnInit, OnDestroy {
   private tickTimer?: ReturnType<typeof setInterval>;
   private subs: Subscription[] = [];
 
-  addTableOpen = false; newTableName = ''; newTableCapacity = 4; savingTable = false;
+  addTableOpen = false; newTableName = ''; newTableCapacity = 4; newTableZone = ''; savingTable = false;
   tableModalMode: 'create' | 'edit' = 'create'; editingTableId: number | null = null;
   detailOpen = false; selected: TableRow | null = null;
   tableFilter: 'all' | 'free' | 'occupied' = 'all';
@@ -319,6 +334,7 @@ export class MesasComponent implements OnInit, OnDestroy {
     this.subs.push(this.realtime.tableRoundSent$.subscribe(() => this.load(true)));
     this.subs.push(this.realtime.tableItemDelivered$.subscribe(() => this.load(true)));
     this.subs.push(this.realtime.tableFreed$.subscribe(() => this.load(true)));
+    this.subs.push(this.realtime.reservationChanged$.subscribe(() => this.load(true)));
   }
 
   ngOnDestroy() {
@@ -390,8 +406,17 @@ export class MesasComponent implements OnInit, OnDestroy {
     return 'Carga de trabajo alta.';
   }
 
-  openAddTable() { this.tableModalMode = 'create'; this.editingTableId = null; this.newTableName = this.nextTableName(); this.newTableCapacity = 4; this.addTableOpen = true; }
-  openEditTable(table: TableRow) { this.tableModalMode = 'edit'; this.editingTableId = table.id; this.newTableName = table.name; this.newTableCapacity = table.capacity || 4; this.addTableOpen = true; }
+  openAddTable() { this.tableModalMode = 'create'; this.editingTableId = null; this.newTableName = this.nextTableName(); this.newTableCapacity = 4; this.newTableZone = ''; this.addTableOpen = true; }
+  openEditTable(table: TableRow) { this.tableModalMode = 'edit'; this.editingTableId = table.id; this.newTableName = table.name; this.newTableCapacity = table.capacity || 4; this.newTableZone = table.zone || ''; this.addTableOpen = true; }
+
+  knownZones(): string[] {
+    const zones = new Set(this.tables.map(t => (t.zone || '').trim()).filter(Boolean));
+    return Array.from(zones).sort();
+  }
+
+  reservationTime(reservedAt: string): string {
+    return new Date(reservedAt).toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' });
+  }
 
   nextTableName(): string {
     const numbers = this.tables
@@ -406,9 +431,10 @@ export class MesasComponent implements OnInit, OnDestroy {
     if (!name || this.savingTable) return;
     this.savingTable = true;
     const capacity = Math.max(1, this.number(this.newTableCapacity) || 4);
+    const zone = this.newTableZone.trim() || null;
     const req = this.tableModalMode === 'create'
-      ? this.api.post<TableRow>('tables', { name, capacity })
-      : this.api.put<TableRow>(`tables/${this.editingTableId}`, { name, capacity });
+      ? this.api.post<TableRow>('tables', { name, capacity, zone })
+      : this.api.put<TableRow>(`tables/${this.editingTableId}`, { name, capacity, zone });
     req.subscribe({
       next: () => {
         this.savingTable = false; this.addTableOpen = false;
@@ -434,7 +460,21 @@ export class MesasComponent implements OnInit, OnDestroy {
     });
   }
 
-  openTable(table: TableRow) { this.selected = table; this.detailOpen = true; }
+  openTable(table: TableRow) {
+    if (!table.active_order && table.has_upcoming_reservation && table.next_reservation) {
+      const mins = minutesUntil(table.next_reservation.reserved_at);
+      if (mins <= 60) {
+        this.confirmation.confirm({
+          header: 'Mesa con reserva proxima', icon: 'pi pi-exclamation-triangle',
+          message: `"${table.name}" tiene una reserva de "${table.next_reservation.customer_name}" (${table.next_reservation.party_size} personas) a las ${this.reservationTime(table.next_reservation.reserved_at)}, ${mins > 0 ? `en ${mins} minutos` : 'ya paso su hora'}. ¿Deseas continuar de todos modos?`,
+          acceptLabel: 'Continuar de todos modos', rejectLabel: 'Elegir otra mesa',
+          accept: () => { this.selected = table; this.detailOpen = true; }
+        });
+        return;
+      }
+    }
+    this.selected = table; this.detailOpen = true;
+  }
 
   toggleItem(item: ItemRow) {
     const previous = item.delivered_at;

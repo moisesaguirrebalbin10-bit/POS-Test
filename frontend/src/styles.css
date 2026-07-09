@@ -1245,6 +1245,19 @@ html:not(.app-dark) .p-dialog .p-dialog-footer {
 .reservation-dialog.p-dialog { border-radius: 20px; overflow: hidden; }
 .reservation-dialog .p-dialog-header { border-radius: 20px 20px 0 0; }
 .reservation-dialog .p-dialog-content:last-child { border-radius: 0 0 20px 20px; }
+html.app-dark .fc-wrap .fc-scrollgrid-section-sticky > *,
+html.app-dark .fc-wrap .fc-col-header,
+html.app-dark .fc-wrap .fc-col-header-cell,
+html.app-dark .fc-wrap thead {
+  background: var(--surface) !important;
+}
+html.app-dark .fc-wrap .fc-col-header-cell-cushion,
+html.app-dark .fc-wrap .fc-daygrid-day-number,
+html.app-dark .fc-wrap .fc-timegrid-slot-label-cushion,
+html.app-dark .fc-wrap .fc-timegrid-axis-cushion,
+html.app-dark .fc-wrap .fc-toolbar-title {
+  color: var(--ink) !important;
+}
 html:not(.app-dark) .p-dialog input,
 html:not(.app-dark) .p-dialog .mat-mdc-form-field,
 html:not(.app-dark) .p-dialog .mat-mdc-text-field-wrapper {

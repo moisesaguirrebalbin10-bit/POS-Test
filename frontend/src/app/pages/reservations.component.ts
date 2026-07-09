@@ -19,7 +19,6 @@ import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin, { DateClickArg } from '@fullcalendar/interaction';
 import { ApiService } from '../core/api.service';
 import { RealtimeService } from '../core/realtime.service';
-import { limaDateTimeLocalString } from '../core/lima-time';
 
 type TableOption = { id: number; name: string; capacity: number; zone: string | null };
 type ReservationRow = {
@@ -59,7 +58,12 @@ const EVENT_DURATION_MINUTES = 90;
 
     <div class="orders-filters">
       @if (viewMode === 'list') {
-        <mat-form-field appearance="outline"><mat-label>Fecha</mat-label><input matInput type="date" [(ngModel)]="dateFilter" (ngModelChange)="onFiltersChange()"></mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Fecha</mat-label>
+          <input matInput [matDatepicker]="listDatePicker" [(ngModel)]="dateFilter" (ngModelChange)="onFiltersChange()">
+          <mat-datepicker-toggle matSuffix [for]="listDatePicker"></mat-datepicker-toggle>
+          <mat-datepicker #listDatePicker></mat-datepicker>
+        </mat-form-field>
       }
       <select class="date-preset-select" [(ngModel)]="statusFilter" (ngModelChange)="onFiltersChange()">
         <option value="">Todos los Estados</option>
@@ -244,6 +248,11 @@ const EVENT_DURATION_MINUTES = 90;
       --fc-button-hover-bg-color: var(--primary-strong); --fc-button-hover-border-color: var(--primary-strong);
       --fc-button-active-bg-color: var(--primary-strong); --fc-button-active-border-color: var(--primary-strong);
     }
+    html.app-dark .fc-wrap {
+      --fc-border-color: var(--line); --fc-page-bg-color: var(--surface);
+      --fc-neutral-bg-color: var(--surface-2); --fc-neutral-text-color: var(--muted);
+      --fc-list-event-hover-bg-color: var(--surface-2);
+    }
     .fc-event-custom { display: flex; flex-direction: column; gap: 1px; padding: 1px 2px; overflow: hidden; }
     .fc-event-custom b { font-size: 11px; }
     .fc-event-custom span { font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -290,7 +299,7 @@ export class ReservationsComponent implements OnInit, OnDestroy {
   tables: TableOption[] = [];
   loading = false;
   page = 1; perPage = 20; total = 0; lastPage = 1;
-  dateFilter = limaDateTimeLocalString().slice(0, 10);
+  dateFilter: Date = new Date();
   statusFilter = '';
   upcomingCount = 0;
   viewMode: 'calendar' | 'list' = 'calendar';
@@ -341,7 +350,7 @@ export class ReservationsComponent implements OnInit, OnDestroy {
 
   load(silent = false) {
     if (!silent) { this.loading = true; this.cdr.detectChanges(); }
-    const params: any = { page: this.page, per_page: this.perPage, date: this.dateFilter };
+    const params: any = { page: this.page, per_page: this.perPage, date: this.toDateStr(this.dateFilter) };
     if (this.statusFilter) params.status = this.statusFilter;
     this.api.get<any>('reservations', params).subscribe({
       next: (r: any) => {

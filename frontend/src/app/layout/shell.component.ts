@@ -1,6 +1,7 @@
 import { AfterViewInit, Component, ElementRef, ViewChild, effect, inject } from '@angular/core';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { filter } from 'rxjs';
+import { BreakpointObserver } from '@angular/cdk/layout';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatSidenavModule } from '@angular/material/sidenav';
 import { MatIconModule } from '@angular/material/icon';
@@ -24,7 +25,7 @@ type ThemeMode = 'light' | 'dark' | 'system';
   imports: [RouterOutlet, RouterLink, RouterLinkActive, MatToolbarModule, MatSidenavModule, MatIconModule, MatButtonModule, MatMenuModule, MatDividerModule, ImageModule, BusinessTypeOnboardingComponent, ReservationAlertsComponent],
   template: `
   <mat-sidenav-container class="shell">
-    <mat-sidenav mode="side" opened class="nav">
+    <mat-sidenav [mode]="isHandset ? 'over' : 'side'" [opened]="sidenavOpened" (openedChange)="sidenavOpened = $event" class="nav">
       <div class="nav-brand">
         <div class="nav-brand-icon">
           @if (branding.logoUrl()) { <p-image [src]="branding.logoUrl()" alt="Logo" [preview]="true" imageClass="nav-brand-logo-img" /> }
@@ -59,12 +60,14 @@ type ThemeMode = 'light' | 'dark' | 'system';
     </mat-sidenav>
     <mat-sidenav-content #scrollContent>
       <mat-toolbar>
+        @if (isHandset) {
+          <button mat-icon-button (click)="sidenavOpened = !sidenavOpened" class="menu-toggle" aria-label="Abrir menu"><mat-icon>menu</mat-icon></button>
+          <span class="toolbar-brand">{{branding.name()}}</span>
+        }
         <span class="spacer"></span>
-        <div class="theme-toggle" aria-label="Tema visual">
-          <button mat-icon-button [class.active]="theme === 'light'" (click)="setTheme('light')" title="Tema claro"><mat-icon>light_mode</mat-icon></button>
-          <button mat-icon-button [class.active]="theme === 'dark'" (click)="setTheme('dark')" title="Tema oscuro"><mat-icon>dark_mode</mat-icon></button>
-          <button mat-icon-button [class.active]="theme === 'system'" (click)="setTheme('system')" title="Tema del sistema"><mat-icon>contrast</mat-icon></button>
-        </div>
+        <button type="button" class="theme-switch" [class.is-dark]="resolvedDark()" (click)="toggleTheme()" [title]="resolvedDark() ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro'" aria-label="Cambiar tema">
+          <span class="theme-switch-thumb"><mat-icon>{{resolvedDark() ? 'dark_mode' : 'light_mode'}}</mat-icon></span>
+        </button>
         <button mat-button class="user-menu-trigger" [matMenuTriggerFor]="userMenu">
           <span class="user-menu-content">
             <span class="user-avatar"><mat-icon>person</mat-icon></span>
@@ -81,10 +84,16 @@ type ThemeMode = 'light' | 'dark' | 'system';
             </div>
           </div>
           <mat-divider></mat-divider>
+          <button mat-menu-item (click)="setTheme('system')">
+            <mat-icon>contrast</mat-icon><span>Usar tema del sistema</span>
+            @if (theme === 'system') { <mat-icon class="menu-check">check</mat-icon> }
+          </button>
+          <mat-divider></mat-divider>
           <button mat-menu-item (click)="logout()"><mat-icon>logout</mat-icon><span>Cerrar sesion</span></button>
         </mat-menu>
       </mat-toolbar>
       <main><router-outlet /></main>
+      <footer class="app-footer">&copy; {{currentYear}} OptiUso. Todos los derechos reservados.</footer>
     </mat-sidenav-content>
   </mat-sidenav-container>
   <app-business-type-onboarding [open]="showOnboarding" [saving]="savingOnboarding" (confirm)="confirmOnboarding($event)" />
@@ -94,10 +103,14 @@ export class ShellComponent implements AfterViewInit {
   auth = inject(AuthService); router = inject(Router); user = this.auth.user(); branding = inject(BrandingService);
   realtime = inject(RealtimeService); messages = inject(MessageService); api = inject(ApiService);
   reservationAlerts = inject(ReservationAlertsService);
+  private breakpointObserver = inject(BreakpointObserver);
   theme: ThemeMode = (localStorage.getItem('pos-theme') as ThemeMode) || 'light';
   private media = window.matchMedia('(prefers-color-scheme: dark)');
   showOnboarding = false;
   savingOnboarding = false;
+  currentYear = new Date().getFullYear();
+  isHandset = false;
+  sidenavOpened = true;
   @ViewChild('scrollContent', { read: ElementRef }) scrollContent?: ElementRef<HTMLElement>;
   menu: { path: string; icon: string; label: string; permission?: string; businessType?: 'restaurant' | 'market'; section: 'principal' | 'gestion' }[] = [
     { path: '/app/dashboard', icon: 'dashboard', label: 'Dashboard', section: 'principal' },
@@ -154,7 +167,15 @@ export class ShellComponent implements AfterViewInit {
       }
     });
 
-    this.router.events.pipe(filter(e => e instanceof NavigationEnd)).subscribe(() => this.resetScroll());
+    this.breakpointObserver.observe(['(max-width: 900px)']).subscribe(result => {
+      this.isHandset = result.matches;
+      this.sidenavOpened = !result.matches;
+    });
+
+    this.router.events.pipe(filter(e => e instanceof NavigationEnd)).subscribe(() => {
+      this.resetScroll();
+      if (this.isHandset) this.sidenavOpened = false;
+    });
   }
 
   ngAfterViewInit() {
@@ -192,6 +213,14 @@ export class ShellComponent implements AfterViewInit {
     this.theme = theme;
     localStorage.setItem('pos-theme', theme);
     this.applyTheme();
+  }
+
+  resolvedDark(): boolean {
+    return this.theme === 'dark' || (this.theme === 'system' && this.media.matches);
+  }
+
+  toggleTheme() {
+    this.setTheme(this.resolvedDark() ? 'light' : 'dark');
   }
 
   applyTheme() {

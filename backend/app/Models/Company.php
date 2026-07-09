@@ -66,7 +66,7 @@ class Company extends Model
     public static function generateLicenseKey(): string
     {
         do {
-            $key = 'SVMX-' . Str::upper(Str::random(4)) . '-' . Str::upper(Str::random(4));
+            $key = 'OPTI-' . Str::upper(Str::random(4)) . '-' . Str::upper(Str::random(4));
         } while (self::where('license_key', $key)->exists());
 
         return $key;

@@ -11,8 +11,7 @@ import { MatIconModule } from '@angular/material/icon';
     <header class="landing-nav">
       <div class="landing-nav-inner">
         <a class="landing-logo" routerLink="/">
-          <span class="landing-logo-mark"><mat-icon>bolt</mat-icon></span>
-          <span class="landing-logo-text">ServiMax</span>
+          <img class="landing-logo-img" src="/assets/brand/optiuso-logo.png" alt="OptiUso">
         </a>
         <nav class="landing-nav-links">
           <a href="#features">Características</a>
@@ -33,7 +32,7 @@ import { MatIconModule } from '@angular/material/icon';
         <div class="landing-hero-copy">
           <span class="landing-eyebrow">Software POS para restaurantes</span>
           <h1>Vende, controla tu caja e inventario desde un solo sistema</h1>
-          <p>ServiMax es el punto de venta pensado para chifas y restaurantes: registra ventas en segundos, controla tu caja diaria y tu inventario, y genera comprobantes en PDF listos para imprimir.</p>
+          <p>OptiUso es el punto de venta pensado para chifas y restaurantes: registra ventas en segundos, controla tu caja diaria y tu inventario, y genera comprobantes en PDF listos para imprimir.</p>
           <div class="landing-hero-actions">
             <a routerLink="/register" class="btn btn-primary btn-lg">Prueba gratis</a>
             <a href="#how" class="btn btn-outline btn-lg">Ver cómo funciona</a>
@@ -76,13 +75,21 @@ import { MatIconModule } from '@angular/material/icon';
 
     <section class="landing-pricing" id="pricing">
       <h2 class="landing-section-title">Planes para cada etapa de tu negocio</h2>
-      <p class="landing-section-sub">Empieza gratis y crece cuando lo necesites.</p>
+      <p class="landing-section-sub">Prueba gratis y elige el plan que se ajuste a tu negocio, sea restaurante o market.</p>
+
+      <div class="billing-toggle">
+        <button type="button" [class.active]="billingCycle === 'monthly'" (click)="billingCycle = 'monthly'">Mensual</button>
+        <button type="button" [class.active]="billingCycle === 'yearly'" (click)="billingCycle = 'yearly'">
+          Anual <span class="save-badge">Ahorra S/ 500</span>
+        </button>
+      </div>
+
       <div class="landing-plans">
         @for (p of plans; track p.name) {
           <div class="plan-card" [class.featured]="p.featured">
             @if (p.featured) { <span class="plan-badge">Más popular</span> }
             <h3>{{p.name}}</h3>
-            <div class="plan-price"><span class="plan-amount">{{p.price}}</span><span class="plan-period">{{p.period}}</span></div>
+            <div class="plan-price"><span class="plan-amount">{{planPrice(p)}}</span><span class="plan-period">{{planPeriod(p)}}</span></div>
             <p class="plan-desc">{{p.desc}}</p>
             <ul class="plan-features">
               @for (feat of p.features; track feat) { <li><mat-icon>check</mat-icon>{{feat}}</li> }
@@ -95,7 +102,7 @@ import { MatIconModule } from '@angular/material/icon';
 
     <section class="landing-cta">
       <h2>¿Listo para simplificar tu negocio?</h2>
-      <p>Únete a los restaurantes que ya gestionan sus ventas con ServiMax.</p>
+      <p>Únete a los restaurantes que ya gestionan sus ventas con OptiUso.</p>
       <a routerLink="/register" class="btn btn-primary btn-lg">Comenzar ahora</a>
     </section>
 
@@ -103,8 +110,7 @@ import { MatIconModule } from '@angular/material/icon';
       <div class="landing-footer-inner">
         <div class="landing-footer-brand">
           <div class="landing-logo">
-            <span class="landing-logo-mark"><mat-icon>bolt</mat-icon></span>
-            <span class="landing-logo-text">ServiMax</span>
+            <img class="landing-logo-img" src="/assets/brand/optiuso-logo.png" alt="OptiUso">
           </div>
           <p>El POS simple para restaurantes.</p>
         </div>
@@ -119,7 +125,7 @@ import { MatIconModule } from '@angular/material/icon';
           <a routerLink="/register">Crear cuenta</a>
         </div>
       </div>
-      <div class="landing-footer-bottom">© {{year}} ServiMax. Todos los derechos reservados.</div>
+      <div class="landing-footer-bottom">© {{year}} OptiUso. Todos los derechos reservados.</div>
     </footer>
   </div>`,
   styles: [`
@@ -136,10 +142,8 @@ import { MatIconModule } from '@angular/material/icon';
 
     .landing-nav { position: sticky; top: 0; z-index: 20; background: color-mix(in srgb, var(--surface) 88%, transparent); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); }
     .landing-nav-inner { max-width: 1180px; margin: 0 auto; padding: 14px 24px; display: flex; align-items: center; gap: 24px; }
-    .landing-logo { display: flex; align-items: center; gap: 8px; text-decoration: none; }
-    .landing-logo-mark { width: 34px; height: 34px; border-radius: 9px; background: var(--primary); color: #fff; display: flex; align-items: center; justify-content: center; flex: none; }
-    .landing-logo-mark mat-icon { font-size: 20px; width: 20px; height: 20px; }
-    .landing-logo-text { font-size: 19px; font-weight: 800; color: var(--ink); letter-spacing: -.02em; }
+    .landing-logo { display: flex; align-items: center; text-decoration: none; }
+    .landing-logo-img { height: 48px; width: auto; }
     .landing-nav-links { display: flex; gap: 22px; margin-left: 12px; flex: 1; }
     .landing-nav-links a { color: var(--muted); text-decoration: none; font-size: 14px; font-weight: 600; }
     .landing-nav-links a:hover { color: var(--ink); }
@@ -148,7 +152,7 @@ import { MatIconModule } from '@angular/material/icon';
     .landing-hero { position: relative; overflow: hidden; aspect-ratio: 1691 / 951; background: #0c1418; }
     .landing-hero-bg {
       position: absolute; inset: 0;
-      background: url('/assets/landing/hero-pos.png') center / cover no-repeat;
+      background: url('/assets/landing/hero-optiuso.jpg') center / cover no-repeat;
     }
     .landing-hero-scrim {
       position: absolute; inset: 0;
@@ -182,7 +186,12 @@ import { MatIconModule } from '@angular/material/icon';
     .step-card p { font-size: 14px; color: var(--muted); line-height: 1.55; margin: 0; }
 
     .landing-pricing { max-width: 1180px; margin: 0 auto; padding: 80px 24px; }
-    .landing-plans { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; align-items: stretch; }
+    .billing-toggle { display: flex; justify-content: center; gap: 4px; margin: 0 auto 36px; padding: 4px; width: fit-content; background: var(--surface-2); border: 1px solid var(--line); border-radius: 999px; }
+    .billing-toggle button { display: flex; align-items: center; gap: 8px; padding: 9px 18px; border: none; border-radius: 999px; background: transparent; color: var(--muted); font-size: 13.5px; font-weight: 700; cursor: pointer; transition: background .15s, color .15s; }
+    .billing-toggle button.active { background: var(--primary); color: #fff; }
+    .billing-toggle .save-badge { font-size: 11px; font-weight: 800; padding: 2px 8px; border-radius: 999px; background: rgba(255,255,255,.2); color: inherit; }
+    .billing-toggle button:not(.active) .save-badge { background: color-mix(in srgb, var(--primary) 15%, transparent); color: var(--primary-strong); }
+    .landing-plans { display: grid; grid-template-columns: repeat(2, minmax(0, 400px)); justify-content: center; gap: 24px; align-items: stretch; }
     .plan-card { position: relative; background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 28px 24px; display: flex; flex-direction: column; }
     .plan-card.featured { border-color: var(--primary); box-shadow: var(--shadow); }
     .plan-badge { position: absolute; top: -12px; left: 50%; transform: translateX(-50%); background: var(--primary); color: #fff; font-size: 11px; font-weight: 700; padding: 4px 12px; border-radius: 999px; }
@@ -240,9 +249,45 @@ export class LandingComponent {
     { title: 'Controla todo desde un panel', text: 'Revisa reportes, cierra caja y da seguimiento a tu negocio desde cualquier dispositivo.' }
   ];
 
-  plans = [
-    { name: 'Básico', price: 'S/ 49', period: '/mes', desc: 'Para un negocio con un solo punto de venta.', featured: false, cta: 'Comenzar gratis', features: ['1 punto de venta', 'Hasta 2 usuarios', 'Reportes básicos', 'Soporte por correo'] },
-    { name: 'Profesional', price: 'S/ 89', period: '/mes', desc: 'Para restaurantes que quieren crecer sin límites.', featured: true, cta: 'Elegir plan', features: ['Puntos de venta ilimitados', 'Usuarios ilimitados', 'Reportes y tendencias avanzadas', 'Comprobantes en PDF personalizados', 'Soporte prioritario'] },
-    { name: 'Empresarial', price: 'Personalizado', period: '', desc: 'Para cadenas con varios locales.', featured: false, cta: 'Hablar con ventas', features: ['Todo lo de Profesional', 'Múltiples locales', 'Integraciones a medida', 'Soporte dedicado'] }
+  billingCycle: 'monthly' | 'yearly' = 'monthly';
+
+  plans: { name: string; priceMonthly: number | null; priceYearly: number | null; desc: string; featured: boolean; cta: string; features: string[] }[] = [
+    {
+      name: 'Profesional', priceMonthly: 100, priceYearly: 700, featured: true, cta: 'Elegir plan',
+      desc: 'Todo lo que tu negocio necesita para vender, controlar caja e inventario, sin límites de uso.',
+      features: [
+        'Ventas y usuarios ilimitados',
+        'Modo Restaurante: Órdenes, Mesas y Cocina en tiempo real',
+        'Reservas con calendario y alertas automáticas',
+        'Modo Market: POS, Productos y Almacenes con alertas de stock',
+        'Inventario con recetas y food cost automático',
+        'Caja con turnos, arqueo y reportes de cierre',
+        'Reportes de ventas, productos más vendidos y métodos de pago',
+        'Roles y permisos personalizados por usuario',
+        'Comprobantes en PDF listos para imprimir',
+        'Web y aplicativo de escritorio, con soporte en español'
+      ]
+    },
+    {
+      name: 'Empresarial', priceMonthly: null, priceYearly: null, featured: false, cta: 'Hablar con ventas',
+      desc: 'Para negocios que necesitan atención dedicada y condiciones a medida.',
+      features: [
+        'Todo lo incluido en Profesional',
+        'Soporte dedicado y prioritario',
+        'Onboarding y capacitación personalizada',
+        'Condiciones de facturación a medida'
+      ]
+    }
   ];
+
+  planPrice(p: { priceMonthly: number | null; priceYearly: number | null }): string {
+    if (p.priceMonthly == null) return 'Personalizado';
+    const amount = this.billingCycle === 'monthly' ? p.priceMonthly : p.priceYearly!;
+    return `S/ ${amount}`;
+  }
+
+  planPeriod(p: { priceMonthly: number | null }): string {
+    if (p.priceMonthly == null) return '';
+    return this.billingCycle === 'monthly' ? '/mes' : '/año';
+  }
 }

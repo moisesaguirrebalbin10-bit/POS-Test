@@ -1,4 +1,4 @@
-# Arquitectura POS Chifa
+# Arquitectura OptiUso
 
 ## Decisiones
 

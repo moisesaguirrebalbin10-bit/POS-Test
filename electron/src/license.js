@@ -4,8 +4,8 @@ const fs = require('node:fs/promises');
 const http = require('node:http');
 const https = require('node:https');
 
-// TODO: cambiar por el dominio real de produccion cuando exista (ej. https://api.servimax.app).
-const CLOUD_LICENSE_URL = process.env.SERVIMAX_CLOUD_URL || 'http://127.0.0.1:8000';
+// TODO: cambiar por el dominio real de produccion cuando exista (ej. https://api.optiuso.app).
+const CLOUD_LICENSE_URL = process.env.OPTIUSO_CLOUD_URL || 'http://127.0.0.1:8000';
 const OFFLINE_GRACE_MS = 7 * 24 * 60 * 60 * 1000;
 
 function licenseStatePath() {

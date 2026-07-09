@@ -31,7 +31,7 @@ class AuthController extends Controller
         ActivityLogger::log($user, 'auth', 'login', "Inicio de sesion de {$user->name} desde IP {$request->ip()}.");
 
         return response()->json([
-            'token' => $user->createToken('pos-chifa')->plainTextToken,
+            'token' => $user->createToken('optiuso')->plainTextToken,
             'user' => $user,
         ]);
     }

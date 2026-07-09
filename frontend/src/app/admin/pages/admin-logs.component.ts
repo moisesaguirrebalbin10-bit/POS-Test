@@ -233,7 +233,7 @@ export class AdminLogsComponent implements OnInit {
     this.fetchAllForExport(rows => {
       const doc = new jsPDF({ orientation: 'landscape' });
       doc.setFontSize(15);
-      doc.text('Registros del Sistema - ServiMax', 14, 16);
+      doc.text('Registros del Sistema - OptiUso', 14, 16);
       doc.setFontSize(9);
       doc.text(`Periodo: ${this.from || 'inicio'} - ${this.to || 'hoy'}`, 14, 23);
       autoTable(doc, {

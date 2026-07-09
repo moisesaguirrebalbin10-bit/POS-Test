@@ -1,5 +1,5 @@
 {
-    "name":  "pos-chifa-desktop",
+    "name":  "optiuso-desktop",
     "version":  "1.0.0",
     "private":  true,
     "main":  "electron/src/main.js",
@@ -17,8 +17,8 @@
                             "wait-on":  "^9.0.10"
                         },
     "build":  {
-                  "appId":  "com.poschifa.desktop",
-                  "productName":  "POS Chifa",
+                  "appId":  "com.optiuso.desktop",
+                  "productName":  "OptiUso",
                   "directories":  {
                                       "output":  "Aplicativo"
                                   },

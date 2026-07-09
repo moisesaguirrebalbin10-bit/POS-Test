@@ -1,4 +1,4 @@
-# ServiMax (POS Chifa)
+# OptiUso
 
 Sistema POS multi-tenant tipo SaaS para restaurantes (chifas), con Angular, Laravel y Electron. Cada empresa registrada tiene sus propios usuarios, roles, productos, ventas y caja, completamente aislados entre si.
 
@@ -40,7 +40,7 @@ npm start
 
 Usuario inicial:
 
-- Email: `admin@poschifa.local`
+- Email: `admin@optiuso.local`
 - Password: `Admin12345`
 
 ## Electron

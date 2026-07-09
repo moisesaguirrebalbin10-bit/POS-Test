@@ -22,7 +22,7 @@ class AdminAuthController extends Controller
         PlatformActivityLogger::log($admin, 'auth', 'login', "Inicio de sesion de {$admin->name} en el panel administrativo.");
 
         return response()->json([
-            'token' => $admin->createToken('servimax-admin')->plainTextToken,
+            'token' => $admin->createToken('optiuso-admin')->plainTextToken,
             'admin' => $admin,
         ]);
     }

@@ -21,8 +21,9 @@ class DatabaseSeeder extends Seeder
         TenantProvisioner::syncPermissionCatalog();
 
         $plans = [
-            ['key' => 'basico', 'name' => 'Basico', 'price' => 49, 'max_users' => 2, 'max_warehouses' => 1],
-            ['key' => 'profesional', 'name' => 'Profesional', 'price' => 89, 'max_users' => null, 'max_warehouses' => null],
+            ['key' => 'basico', 'name' => 'Basico', 'price' => 49, 'max_users' => 2, 'max_warehouses' => 1, 'active' => false],
+            ['key' => 'profesional', 'name' => 'Profesional', 'price' => 100, 'billing_period' => 'monthly', 'max_users' => null, 'max_warehouses' => null],
+            ['key' => 'profesional_anual', 'name' => 'Profesional', 'price' => 700, 'billing_period' => 'yearly', 'max_users' => null, 'max_warehouses' => null],
             ['key' => 'empresarial', 'name' => 'Empresarial', 'price' => 0, 'max_users' => null, 'max_warehouses' => null],
         ];
         foreach ($plans as $plan) {

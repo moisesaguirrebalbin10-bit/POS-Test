@@ -1,6 +1,8 @@
 import { Component, inject } from '@angular/core';
-import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { Router, RouterLink, RouterLinkActive, RouterOutlet, NavigationEnd } from '@angular/router';
+import { filter } from 'rxjs';
 import { FormsModule } from '@angular/forms';
+import { BreakpointObserver } from '@angular/cdk/layout';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatSidenavModule } from '@angular/material/sidenav';
 import { MatIconModule } from '@angular/material/icon';
@@ -16,10 +18,10 @@ import { AdminApiService } from '../core/admin-api.service';
   imports: [RouterOutlet, RouterLink, RouterLinkActive, FormsModule, MatToolbarModule, MatSidenavModule, MatIconModule, MatButtonModule, MatMenuModule, MatBadgeModule],
   template: `
   <mat-sidenav-container class="shell admin-shell">
-    <mat-sidenav mode="side" opened class="nav admin-nav">
+    <mat-sidenav [mode]="isHandset ? 'over' : 'side'" [opened]="sidenavOpened" (openedChange)="sidenavOpened = $event" class="nav admin-nav">
       <div class="brand-box">
-        <div class="brand-logo"><mat-icon>bolt</mat-icon></div>
-        <div class="brand-text"><h2>ServiMax</h2><small>Super Admin</small></div>
+        <img class="brand-logo-img" src="/assets/brand/optiuso-logo.png" alt="OptiUso">
+        <div class="brand-text"><small>Super Admin</small></div>
       </div>
       <nav class="admin-nav-links">
         @for (item of visibleMenu(); track item.path) { <a class="nav-link" [routerLink]="item.path" routerLinkActive="active-link"><mat-icon>{{item.icon}}</mat-icon><span>{{item.label}}</span></a> }
@@ -31,6 +33,9 @@ import { AdminApiService } from '../core/admin-api.service';
     </mat-sidenav>
     <mat-sidenav-content>
       <mat-toolbar class="admin-toolbar-top">
+        @if (isHandset) {
+          <button mat-icon-button (click)="sidenavOpened = !sidenavOpened" class="menu-toggle" aria-label="Abrir menu"><mat-icon>menu</mat-icon></button>
+        }
         <div class="search-pill admin-search"><mat-icon>search</mat-icon><input type="text" placeholder="Buscar empresas..." [(ngModel)]="globalSearch" (keydown.enter)="runSearch()"></div>
         <span class="spacer"></span>
         <button mat-icon-button [matMenuTriggerFor]="notifMenu" [matBadge]="unreadCount || null" matBadgeColor="warn" matBadgeSize="small" (click)="loadNotifications()" title="Notificaciones">
@@ -54,10 +59,8 @@ import { AdminApiService } from '../core/admin-api.service';
   styles: [`
     .admin-nav { background: #111827; }
     .admin-nav .brand-box { flex-direction: row; align-items: center; gap: 10px; padding: 4px 12px 18px; margin-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,.08); }
-    .admin-nav .brand-logo { flex: none; width: 38px; height: 38px; background: rgba(34,197,94,.15); border-radius: 10px; padding: 0; }
-    .admin-nav .brand-logo mat-icon { width: 20px; height: 20px; font-size: 20px; color: #22c55e; }
+    .admin-nav .brand-logo-img { flex: none; height: 40px; width: auto; }
     .admin-nav .brand-text { align-items: flex-start; text-align: left; gap: 0; }
-    .admin-nav .brand-text h2 { color: #fff; }
     .admin-nav .brand-text small { color: #64748b; }
     .admin-nav-links { display: flex; flex-direction: column; flex: 1; }
     .admin-nav .nav-link {
@@ -88,13 +91,25 @@ import { AdminApiService } from '../core/admin-api.service';
     .notif-empty { padding: 16px; color: var(--muted); font-size: 13px; }
     .notif-item { display: flex; flex-direction: column; gap: 2px; padding: 4px 0; white-space: normal; }
     .notif-item small { color: var(--muted); }
+
+    @media (max-width: 900px) {
+      .admin-search { width: min(220px, 40vw); }
+    }
+    @media (max-width: 640px) {
+      .admin-toolbar-top { gap: 2px; padding: 0 8px; }
+      .admin-search { display: none; }
+      .sign-out-btn span { display: none; }
+    }
   `]
 })
 export class AdminShellComponent {
   auth = inject(AdminAuthService); router = inject(Router); admin = this.auth.admin(); api = inject(AdminApiService); messages = inject(MessageService);
+  private breakpointObserver = inject(BreakpointObserver);
   unreadCount = 0;
   notifications: any[] = [];
   globalSearch = '';
+  isHandset = false;
+  sidenavOpened = true;
 
   menu = [
     { path: '/admin/dashboard', icon: 'dashboard', label: 'Dashboard' },
@@ -106,7 +121,16 @@ export class AdminShellComponent {
     { path: '/admin/staff-roles', icon: 'shield', label: 'Roles Staff', permission: 'staff.manage' },
   ];
 
-  constructor() { this.loadNotifications(); }
+  constructor() {
+    this.loadNotifications();
+    this.breakpointObserver.observe(['(max-width: 900px)']).subscribe(result => {
+      this.isHandset = result.matches;
+      this.sidenavOpened = !result.matches;
+    });
+    this.router.events.pipe(filter(e => e instanceof NavigationEnd)).subscribe(() => {
+      if (this.isHandset) this.sidenavOpened = false;
+    });
+  }
 
   visibleMenu() { return this.menu.filter(item => !item.permission || this.auth.hasPermission(item.permission)); }
 

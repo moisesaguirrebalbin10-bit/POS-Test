@@ -36,7 +36,7 @@ class RegisterController extends Controller
                 'license_key' => Company::generateLicenseKey(),
                 'status' => 'trial',
                 'trial_ends_at' => now()->addDays($settings->trial_days),
-                'plan_id' => Plan::where('key', 'basico')->value('id'),
+                'plan_id' => Plan::where('key', 'profesional')->value('id'),
                 'igv_percent' => $settings->default_igv_percent,
             ])->fresh();
 
@@ -70,7 +70,7 @@ class RegisterController extends Controller
         });
 
         return response()->json([
-            'token' => $user->createToken('pos-chifa')->plainTextToken,
+            'token' => $user->createToken('optiuso')->plainTextToken,
             'user' => $user->load('roles.permissions', 'company'),
             'license_key' => $company->license_key,
         ], 201);

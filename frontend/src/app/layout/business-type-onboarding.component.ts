@@ -10,29 +10,31 @@ type BusinessType = 'market' | 'restaurant';
   <p-dialog [visible]="open" [modal]="true" [closable]="false" [dismissableMask]="false" [draggable]="false"
             [style]="{ width: 'min(720px, 96vw)' }" styleClass="onboarding-dialog">
     <div class="onboarding">
-      <h2>Bienvenido a ServiMax</h2>
+      <h2>Bienvenido a OptiUso</h2>
       <p class="onboarding-sub">Antes de empezar, elige el modo con el que trabaja tu negocio. Podras cambiarlo despues cuando quieras desde <strong>Empresa &rarr; Editar</strong>.</p>
 
       <div class="onboarding-cards">
         <button type="button" class="onboarding-card" [class.selected]="selected === 'market'" (click)="selected = 'market'">
-          <span class="material-icons onboarding-icon">store</span>
+          <span class="material-icons onboarding-icon">storefront</span>
           <h3>Modo Market</h3>
           <p>Ideal para bodegas, minimarkets y tiendas con venta rapida por mostrador.</p>
           <ul>
-            <li>Punto de venta agil, sin mesas</li>
-            <li>Control de inventario y almacenes</li>
-            <li>Reportes de ventas y caja</li>
+            <li>Punto de venta agil con catalogo y busqueda rapida, sin mesas</li>
+            <li>Control de stock por almacen, con alertas de stock bajo</li>
+            <li>Caja por turnos, con movimientos de efectivo y arqueo</li>
+            <li>Reportes de ventas, productos mas vendidos y metodos de pago</li>
           </ul>
         </button>
 
         <button type="button" class="onboarding-card" [class.selected]="selected === 'restaurant'" (click)="selected = 'restaurant'">
           <span class="material-icons onboarding-icon">restaurant</span>
           <h3>Modo Restaurante</h3>
-          <p>Ideal para restaurantes y chifas que atienden pedidos por mesa.</p>
+          <p>Ideal para restaurantes y chifas que atienden pedidos por mesa, para llevar o delivery.</p>
           <ul>
-            <li>Modulo de Mesas con pedidos por rondas</li>
-            <li>Temporizador de atencion por ronda</li>
-            <li>Cobro por mesa con propina y ticket</li>
+            <li>Ordenes por Mesa, Para llevar o Delivery, con catalogo y vista de cocina en tiempo real</li>
+            <li>Mesas con comandas por rondas, temporizador y cobro con propina</li>
+            <li>Reservas con calendario interactivo, mesas multiples y alertas automaticas</li>
+            <li>Inventario con recetas, food cost automatico y descuento de insumos por venta</li>
           </ul>
         </button>
       </div>

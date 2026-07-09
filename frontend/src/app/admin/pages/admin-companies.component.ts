@@ -19,7 +19,7 @@ type CreateForm = { company_name: string; owner_name: string; owner_email: strin
   <section class="admin-page">
     @if (!companyId) {
       <header class="admin-head">
-        <div><span class="eyebrow">Panel Administrativo</span><h1>Empresas</h1><p>Todas las empresas registradas en ServiMax.</p></div>
+        <div><span class="eyebrow">Panel Administrativo</span><h1>Empresas</h1><p>Todas las empresas registradas en OptiUso.</p></div>
         <button mat-flat-button class="primary-action" (click)="openCreateModal()"><mat-icon>add</mat-icon>Nueva Empresa</button>
       </header>
       <div class="admin-panel">
@@ -171,6 +171,7 @@ type CreateForm = { company_name: string; owner_name: string; owner_email: strin
     .status-chip.status-trial { background: #fef9c3; color: #a16207; }
     .status-chip.status-suspended, .status-chip.status-cancelled, .status-chip.status-past_due { background: #fee2e2; color: #dc2626; }
     .companies-toolbar { grid-template-columns: 1fr auto; }
+    @media (max-width: 700px) { .companies-toolbar { grid-template-columns: 1fr; } }
     .credentials-box { display: flex; flex-direction: column; gap: 10px; margin: 14px 0; padding: 14px; border-radius: 10px; background: var(--surface-2); border: 1px solid var(--line); }
     .credentials-box > div { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 13px; }
     .credentials-box span { color: var(--muted); font-weight: 700; }

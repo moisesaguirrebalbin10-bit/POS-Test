@@ -28,7 +28,7 @@ const STATUS_LABELS: Record<string, string> = { trial: 'Prueba', active: 'Activa
   template: `
   <section class="admin-page dashboard-page">
     <header class="admin-head">
-      <div><span class="eyebrow">Panel Administrativo</span><h1>Dashboard</h1><p>Resumen de todas las empresas registradas en ServiMax. Sistema central de monitoreo de KPIs operativos y comerciales.</p></div>
+      <div><span class="eyebrow">Panel Administrativo</span><h1>Dashboard</h1><p>Resumen de todas las empresas registradas en OptiUso. Sistema central de monitoreo de KPIs operativos y comerciales.</p></div>
     </header>
 
     @if (stats) {
@@ -124,8 +124,8 @@ const STATUS_LABELS: Record<string, string> = { trial: 'Prueba', active: 'Activa
       </article>
 
       <footer class="admin-dashboard-footer">
-        <span><b>ServiMax OS</b> &middot; Uso Interno</span>
-        <span>&copy; {{currentYear}} ServiMax. Todos los derechos reservados.</span>
+        <span><b>OptiUso OS</b> &middot; Uso Interno</span>
+        <span>&copy; {{currentYear}} OptiUso. Todos los derechos reservados.</span>
       </footer>
     }
   </section>`,

@@ -20,7 +20,7 @@ const ROLE_ICONS: Record<string, { icon: string; bg: string; color: string }> = 
   template: `
   <section class="admin-page">
     <header class="admin-head">
-      <div><span class="eyebrow">Panel Administrativo</span><h1>Roles de Sistema</h1><p>Define y gestiona los niveles de acceso y permisos para el personal administrativo de ServiMax.</p></div>
+      <div><span class="eyebrow">Panel Administrativo</span><h1>Roles de Sistema</h1><p>Define y gestiona los niveles de acceso y permisos para el personal administrativo de OptiUso.</p></div>
       <button mat-flat-button class="primary-action" (click)="openCreate()"><mat-icon>add</mat-icon>Nuevo Rol</button>
     </header>
 

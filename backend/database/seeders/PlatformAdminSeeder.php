@@ -37,7 +37,7 @@ class PlatformAdminSeeder extends Seeder
 
         $admin = PlatformAdmin::firstOrCreate(
             ['email' => 'jhordyaguirrebalbin@gmail.com'],
-            ['name' => 'Jhordy Aguirre', 'password' => Hash::make('ServiMaxAdmin2026!'), 'active' => true]
+            ['name' => 'Jhordy Aguirre', 'password' => Hash::make('OptiUsoAdmin2026!'), 'active' => true]
         );
         $admin->roles()->syncWithoutDetaching([$superAdmin->id]);
     }

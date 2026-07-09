@@ -15,7 +15,7 @@ type StaffForm = { id: number | null; name: string; email: string; password: str
   template: `
   <section class="admin-page">
     <header class="admin-head">
-      <div><span class="eyebrow">Panel Administrativo</span><h1>Personal Administrativo</h1><p>Administre los miembros del equipo interno de ServiMax y sus niveles de acceso al sistema.</p></div>
+      <div><span class="eyebrow">Panel Administrativo</span><h1>Personal Administrativo</h1><p>Administre los miembros del equipo interno de OptiUso y sus niveles de acceso al sistema.</p></div>
       <button mat-flat-button class="primary-action" (click)="openCreate()"><mat-icon>person_add</mat-icon>Nuevo Miembro</button>
     </header>
 
@@ -123,6 +123,7 @@ type StaffForm = { id: number | null; name: string; email: string; password: str
   </section>`,
   styles: [`
     .companies-toolbar { grid-template-columns: auto 1fr; align-items: center; }
+    @media (max-width: 700px) { .companies-toolbar { grid-template-columns: 1fr; } }
     .staff-audit-banner { flex-direction: row; align-items: center; text-align: left; margin-top: 18px; gap: 16px; padding: 18px 20px; }
     .staff-audit-banner p { margin: 4px 0 0; }
     .btn-outline-audit { flex: none; padding: 10px 16px; border-radius: 8px; border: 1px solid rgba(255,255,255,.3); color: #fff; text-decoration: none; font-size: 13px; font-weight: 700; }
@@ -246,7 +247,7 @@ export class AdminStaffComponent implements OnInit {
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
-    link.href = url; link.download = `staff-servimax-${new Date().toISOString().slice(0, 10)}.csv`; link.click();
+    link.href = url; link.download = `staff-optiuso-${new Date().toISOString().slice(0, 10)}.csv`; link.click();
     URL.revokeObjectURL(url);
   }
 }

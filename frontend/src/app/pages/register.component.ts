@@ -9,8 +9,7 @@ import { AuthService } from '../core/auth.service';
   template: `
   <div class="login-page">
     <a class="login-brand" routerLink="/">
-      <span class="login-brand-mark"><mat-icon>bolt</mat-icon></span>
-      <span class="login-brand-text">ServiMax</span>
+      <img class="login-brand-logo" src="/assets/brand/optiuso-logo.png" alt="OptiUso">
     </a>
 
     <div class="login-card">
@@ -28,7 +27,7 @@ import { AuthService } from '../core/auth.service';
         </label>
         <label class="field">
           <span class="field-label"><mat-icon>mail</mat-icon>Email</span>
-          <input class="plain-input" type="email" formControlName="email" autocomplete="email" placeholder="usuario@servimax.com">
+          <input class="plain-input" type="email" formControlName="email" autocomplete="email" placeholder="usuario@optiuso.com">
         </label>
         <label class="field">
           <span class="field-label"><mat-icon>lock</mat-icon>Contraseña</span>
@@ -42,7 +41,7 @@ import { AuthService } from '../core/auth.service';
 
         <label class="terms-check">
           <input type="checkbox" [(ngModel)]="acceptedTerms" [ngModelOptions]="{standalone: true}">
-          <span>Acepto los <b>Términos de Servicio</b> y la <b>Política de Privacidad</b> de ServiMax.</span>
+          <span>Acepto los <a routerLink="/terms" target="_blank">Términos de Servicio</a> y la <a routerLink="/privacy" target="_blank">Política de Privacidad</a> de OptiUso.</span>
         </label>
 
         @if (error) { <p class="error">{{error}}</p> }
@@ -59,8 +58,8 @@ import { AuthService } from '../core/auth.service';
     <a class="back-home" routerLink="/"><mat-icon>arrow_back</mat-icon>Volver al Inicio</a>
 
     <footer class="login-footer">
-      <p>&copy; {{currentYear}} ServiMax. Todos los derechos reservados.</p>
-      <div class="login-footer-links"><span>Privacidad</span><span class="dot">&middot;</span><span>Seguridad</span><span class="dot">&middot;</span><span>Términos</span></div>
+      <p>&copy; {{currentYear}} OptiUso. Todos los derechos reservados.</p>
+      <div class="login-footer-links"><a routerLink="/privacy">Privacidad</a><span class="dot">&middot;</span><span>Seguridad</span><span class="dot">&middot;</span><a routerLink="/terms">Términos</a></div>
     </footer>
   </div>`,
   styles: [`
@@ -72,10 +71,8 @@ import { AuthService } from '../core/auth.service';
         linear-gradient(135deg, #0c1f1c 0%, #0f2e28 42%, #123a30 68%, #0a1917 100%);
     }
 
-    .login-brand { display: flex; flex-direction: column; align-items: center; gap: 10px; text-decoration: none; }
-    .login-brand-mark { width: 46px; height: 46px; border-radius: 12px; background: #14b8a6; color: #06201b; display: flex; align-items: center; justify-content: center; flex: none; box-shadow: 0 12px 30px rgba(20,184,166,.35); }
-    .login-brand-mark mat-icon { font-size: 24px; width: 24px; height: 24px; }
-    .login-brand-text { font-size: 19px; font-weight: 800; color: #fff; letter-spacing: -.01em; }
+    .login-brand { display: flex; flex-direction: column; align-items: center; text-decoration: none; }
+    .login-brand-logo { height: 110px; width: auto; }
 
     .login-card { width: min(420px, 100%); background: #f4f6f5; border-radius: 18px; box-shadow: 0 30px 70px rgba(0,0,0,.35); padding: 30px 28px; }
     .login-card h1 { font-size: 21px; margin-bottom: 6px; color: #14201e; }
@@ -111,7 +108,8 @@ import { AuthService } from '../core/auth.service';
 
     .terms-check { display: flex; align-items: flex-start; gap: 8px; font-size: 12px; color: #475569; line-height: 1.5; cursor: pointer; margin-top: 2px; }
     .terms-check input { width: 15px; height: 15px; flex: none; margin-top: 2px; accent-color: #0f766e; cursor: pointer; }
-    .terms-check b { color: #0f766e; font-weight: 700; }
+    .terms-check a { color: #0f766e; font-weight: 700; text-decoration: none; }
+    .terms-check a:hover { text-decoration: underline; }
 
     .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 18px; border-radius: 10px; font-size: 14px; font-weight: 700; text-decoration: none; cursor: pointer; border: none; }
     .btn-primary { background: #0b5f59; color: #fff; margin-top: 4px; }
@@ -132,6 +130,8 @@ import { AuthService } from '../core/auth.service';
     .login-footer p { margin: 0; font-size: 12px; font-weight: 700; color: rgba(255,255,255,.78); }
     .login-footer-links { display: flex; align-items: center; gap: 8px; font-size: 11.5px; color: rgba(255,255,255,.5); }
     .login-footer-links .dot { color: rgba(255,255,255,.35); }
+    .login-footer-links a { color: inherit; text-decoration: none; }
+    .login-footer-links a:hover { color: #fff; text-decoration: underline; }
   `]
 })
 export class RegisterComponent {

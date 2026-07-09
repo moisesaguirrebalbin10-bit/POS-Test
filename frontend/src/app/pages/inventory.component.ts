@@ -467,6 +467,7 @@ type AvailableProduct = { id: number; name: string; sale_price: number | string;
     .recipe-fc-value { font-size: 20px; font-weight: 800; }
 
     .form-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    @media (max-width: 480px) { .form-row-2 { grid-template-columns: 1fr; } }
     .conteo-list { display: flex; flex-direction: column; gap: 8px; max-height: 320px; overflow: auto; }
     .conteo-line { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px; border: 1px solid var(--soft-line); border-radius: 8px; }
     .conteo-line input { width: 90px; height: 34px; border: 1px solid var(--line); border-radius: 6px; padding: 0 8px; text-align: right; }

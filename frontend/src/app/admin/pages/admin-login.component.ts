@@ -12,12 +12,12 @@ import { AdminAuthService } from '../core/admin-auth.service';
     <div class="login-card">
       <span class="login-badge"><mat-icon>admin_panel_settings</mat-icon></span>
       <h1>Panel Administrativo</h1>
-      <p class="login-sub">Acceso exclusivo para el equipo de ServiMax</p>
+      <p class="login-sub">Acceso exclusivo para el equipo de OptiUso</p>
 
       <form [formGroup]="form" (ngSubmit)="submit()">
         <label class="field">
           <span>Email</span>
-          <input class="plain-input" type="email" formControlName="email" autocomplete="email" placeholder="admin@servimax.com">
+          <input class="plain-input" type="email" formControlName="email" autocomplete="email" placeholder="admin@optiuso.com">
         </label>
         <label class="field">
           <span class="field-label-row"><span>Contraseña</span><button type="button" class="link-btn" (click)="forgotPassword()">¿Olvidó su clave?</button></span>
@@ -45,7 +45,7 @@ import { AdminAuthService } from '../core/admin-auth.service';
 
     <a class="back-home" routerLink="/"><mat-icon>arrow_back</mat-icon>Volver al inicio</a>
 
-    <footer class="login-footer"><p>&copy; {{currentYear}} ServiMax. Todos los derechos reservados.</p></footer>
+    <footer class="login-footer"><p>&copy; {{currentYear}} OptiUso. Todos los derechos reservados.</p></footer>
   </div>`,
   styles: [`
     .admin-login-page { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px; background: var(--bg); padding: 24px; }
@@ -118,6 +118,6 @@ export class AdminLoginComponent {
   }
 
   forgotPassword() {
-    this.messages.add({ severity: 'info', summary: 'Recuperar acceso', detail: 'Pide a otro Super Admin de ServiMax que restablezca tu contraseña desde el modulo de Staff.' });
+    this.messages.add({ severity: 'info', summary: 'Recuperar acceso', detail: 'Pide a otro Super Admin de OptiUso que restablezca tu contraseña desde el modulo de Staff.' });
   }
 }

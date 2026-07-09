@@ -243,11 +243,14 @@ const EVENT_DURATION_MINUTES = 90;
     .calendar-hint mat-icon { font-size: 15px; width: 15px; height: 15px; }
     .fc-wrap {
       border: 1px solid var(--soft-line); border-radius: 12px; padding: 12px; background: var(--surface);
+      overflow-x: auto; -webkit-overflow-scrolling: touch;
       --fc-today-bg-color: rgba(15, 118, 110, .12);
       --fc-button-bg-color: var(--primary); --fc-button-border-color: var(--primary);
       --fc-button-hover-bg-color: var(--primary-strong); --fc-button-hover-border-color: var(--primary-strong);
       --fc-button-active-bg-color: var(--primary-strong); --fc-button-active-border-color: var(--primary-strong);
     }
+    .fc-wrap .fc-view-harness { min-width: 560px; }
+    @media (max-width: 600px) { .fc-wrap { padding: 8px; } }
     html.app-dark .fc-wrap {
       --fc-border-color: var(--line); --fc-page-bg-color: var(--surface);
       --fc-neutral-bg-color: var(--surface-2); --fc-neutral-text-color: var(--muted);
@@ -287,6 +290,8 @@ const EVENT_DURATION_MINUTES = 90;
     }
     .table-card-check mat-icon { font-size: 14px; width: 14px; height: 14px; color: #fff; }
     .form-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    @media (max-width: 480px) { .form-row-2 { grid-template-columns: 1fr; } }
+    @media (max-width: 700px) { .table-cards-grid { grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); } }
   `]
 })
 export class ReservationsComponent implements OnInit, OnDestroy {
@@ -319,6 +324,11 @@ export class ReservationsComponent implements OnInit, OnDestroy {
     initialView: 'dayGridMonth',
     locale: esLocale,
     headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek,timeGridDay' },
+    views: {
+      dayGridMonth: { titleFormat: { year: 'numeric', month: 'short' } },
+      timeGridWeek: { titleFormat: { year: 'numeric', month: 'short', day: 'numeric' } },
+      timeGridDay: { titleFormat: { year: 'numeric', month: 'short', day: 'numeric', weekday: 'short' } }
+    },
     slotMinTime: '00:00:00',
     slotMaxTime: '24:00:00',
     allDaySlot: false,

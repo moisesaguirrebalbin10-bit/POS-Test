@@ -6,7 +6,7 @@ export class BrandingService {
   private api = inject(ApiService);
   private loaded = false;
 
-  name = signal('POS Chifa');
+  name = signal('OptiUso');
   slogan = signal('');
   logoPath = signal<string | null>(null);
   businessType = signal<'market' | 'restaurant'>('market');
@@ -17,7 +17,7 @@ export class BrandingService {
     this.loaded = true;
     this.api.get<any>('branding').subscribe({
       next: settings => {
-        this.name.set(settings?.name || 'POS Chifa');
+        this.name.set(settings?.name || 'OptiUso');
         this.slogan.set(settings?.slogan || '');
         this.logoPath.set(settings?.logo_path || null);
         this.businessType.set(settings?.business_type === 'restaurant' ? 'restaurant' : 'market');

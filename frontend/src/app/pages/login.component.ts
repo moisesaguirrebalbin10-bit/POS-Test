@@ -10,8 +10,7 @@ import { AuthService } from '../core/auth.service';
   template: `
   <div class="login-page">
     <a class="login-brand" routerLink="/">
-      <span class="login-brand-mark"><mat-icon>bolt</mat-icon></span>
-      <span class="login-brand-text">ServiMax</span>
+      <img class="login-brand-logo" src="/assets/brand/optiuso-logo.png" alt="OptiUso">
     </a>
 
     <div class="login-card">
@@ -23,7 +22,7 @@ import { AuthService } from '../core/auth.service';
           <span>Email</span>
           <span class="field-input">
             <mat-icon>mail</mat-icon>
-            <input type="email" formControlName="email" autocomplete="email" placeholder="usuario@servimax.com">
+            <input type="email" formControlName="email" autocomplete="email" placeholder="usuario@optiuso.com">
           </span>
         </label>
         <label class="field">
@@ -62,8 +61,8 @@ import { AuthService } from '../core/auth.service';
     <a class="back-home" routerLink="/"><mat-icon>arrow_back</mat-icon>Volver al Inicio</a>
 
     <footer class="login-footer">
-      <p>&copy; {{currentYear}} ServiMax. Todos los derechos reservados.</p>
-      <div class="login-footer-links"><span>Privacidad</span><span class="dot">&middot;</span><span>Seguridad</span><span class="dot">&middot;</span><span>Términos</span></div>
+      <p>&copy; {{currentYear}} OptiUso. Todos los derechos reservados.</p>
+      <div class="login-footer-links"><a routerLink="/privacy">Privacidad</a><span class="dot">&middot;</span><span>Seguridad</span><span class="dot">&middot;</span><a routerLink="/terms">Términos</a></div>
     </footer>
   </div>`,
   styles: [`
@@ -75,10 +74,8 @@ import { AuthService } from '../core/auth.service';
         linear-gradient(135deg, #0c1f1c 0%, #0f2e28 42%, #123a30 68%, #0a1917 100%);
     }
 
-    .login-brand { display: flex; flex-direction: column; align-items: center; gap: 10px; text-decoration: none; }
-    .login-brand-mark { width: 46px; height: 46px; border-radius: 12px; background: #14b8a6; color: #06201b; display: flex; align-items: center; justify-content: center; flex: none; box-shadow: 0 12px 30px rgba(20,184,166,.35); }
-    .login-brand-mark mat-icon { font-size: 24px; width: 24px; height: 24px; }
-    .login-brand-text { font-size: 19px; font-weight: 800; color: #fff; letter-spacing: -.01em; }
+    .login-brand { display: flex; flex-direction: column; align-items: center; text-decoration: none; }
+    .login-brand-logo { height: 110px; width: auto; }
 
     .login-card { width: min(400px, 100%); background: #fff; border-radius: 18px; box-shadow: 0 30px 70px rgba(0,0,0,.35); padding: 32px 28px; }
     .login-card h1 { font-size: 21px; margin-bottom: 6px; color: #14201e; }
@@ -133,6 +130,8 @@ import { AuthService } from '../core/auth.service';
     .login-footer p { margin: 0; font-size: 12px; font-weight: 700; color: rgba(255,255,255,.78); }
     .login-footer-links { display: flex; align-items: center; gap: 8px; font-size: 11.5px; color: rgba(255,255,255,.5); }
     .login-footer-links .dot { color: rgba(255,255,255,.35); }
+    .login-footer-links a { color: inherit; text-decoration: none; }
+    .login-footer-links a:hover { color: #fff; text-decoration: underline; }
   `]
 })
 export class LoginComponent {
@@ -155,6 +154,6 @@ export class LoginComponent {
   }
 
   contactSupport() {
-    this.messages.add({ severity: 'info', summary: 'Soporte', detail: 'Comunicate con el administrador de tu cuenta ServiMax para recibir ayuda tecnica.' });
+    this.messages.add({ severity: 'info', summary: 'Soporte', detail: 'Comunicate con el administrador de tu cuenta OptiUso para recibir ayuda tecnica.' });
   }
 }

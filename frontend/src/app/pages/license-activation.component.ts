@@ -9,13 +9,12 @@ import '../core/electron-window';
   template: `
   <div class="login">
     <div class="login-logo">
-      <span class="login-logo-mark"><mat-icon>bolt</mat-icon></span>
-      <span class="login-logo-text">ServiMax</span>
+      <img class="login-logo-img" src="/assets/brand/optiuso-logo.png" alt="OptiUso">
     </div>
 
     <div class="login-card">
       <h1>Activa tu Aplicativo de Escritorio</h1>
-      <p class="login-sub">{{blockedMessage || 'Ingresa el codigo de licencia que recibiste al registrar tu empresa en ServiMax.'}}</p>
+      <p class="login-sub">{{blockedMessage || 'Ingresa el codigo de licencia que recibiste al registrar tu empresa en OptiUso.'}}</p>
 
       <form (ngSubmit)="submit()">
         <label class="field">
@@ -30,10 +29,8 @@ import '../core/electron-window';
   styles: [`
     .login { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 28px; background: var(--bg); padding: 24px; }
 
-    .login-logo { display: flex; align-items: center; gap: 8px; text-decoration: none; }
-    .login-logo-mark { width: 38px; height: 38px; border-radius: 10px; background: var(--primary); color: #fff; display: flex; align-items: center; justify-content: center; flex: none; }
-    .login-logo-mark mat-icon { font-size: 20px; width: 20px; height: 20px; }
-    .login-logo-text { font-size: 21px; font-weight: 800; color: var(--ink); letter-spacing: -.02em; }
+    .login-logo { display: flex; align-items: center; justify-content: center; text-decoration: none; }
+    .login-logo-img { height: 90px; width: auto; }
 
     .login-card { width: min(400px, 100%); background: var(--surface); border: 1px solid var(--line); border-radius: 18px; box-shadow: var(--shadow); padding: 32px 28px; text-align: center; }
     .login-card h1 { font-size: 20px; margin-bottom: 6px; }

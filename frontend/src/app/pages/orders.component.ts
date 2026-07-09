@@ -377,6 +377,11 @@ type PickLine = { product_id: number; name: string; sale_price: number; quantity
     .mesas-screen { display: flex; flex-direction: column; gap: 18px; }
     .header-actions { display: flex; align-items: center; gap: 10px; }
     .header-actions .active-toggle { background: var(--surface-2); border-color: var(--primary); color: var(--primary); }
+    @media (max-width: 640px) {
+      .pos-hero { flex-wrap: wrap; }
+      .header-actions { width: 100%; flex-wrap: wrap; }
+      .header-actions > a, .header-actions > button { flex: 1; min-width: 0; justify-content: center; }
+    }
     .orders-filters { display: flex; flex-wrap: wrap; gap: 10px; }
     .orders-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 14px; }
 

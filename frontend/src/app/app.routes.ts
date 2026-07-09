@@ -5,6 +5,8 @@ import { LandingComponent } from './pages/landing.component';
 import { LoginComponent } from './pages/login.component';
 import { RegisterComponent } from './pages/register.component';
 import { LicenseActivationComponent } from './pages/license-activation.component';
+import { TermsComponent } from './pages/terms.component';
+import { PrivacyComponent } from './pages/privacy.component';
 import { DashboardComponent } from './pages/dashboard.component';
 import { PosComponent } from './pages/pos.component';
 import { MesasComponent } from './pages/mesas.component';
@@ -37,6 +39,8 @@ export const routes: Routes = [
   { path: 'login', component: LoginComponent, canActivate: [guestGuard] },
   { path: 'register', component: RegisterComponent, canActivate: [guestGuard] },
   { path: 'license', component: LicenseActivationComponent },
+  { path: 'terms', component: TermsComponent },
+  { path: 'privacy', component: PrivacyComponent },
   {
     path: 'app', component: ShellComponent, canActivate: [authGuard], children: [
       { path: '', pathMatch: 'full', redirectTo: 'dashboard' },

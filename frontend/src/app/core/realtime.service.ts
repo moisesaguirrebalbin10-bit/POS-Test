@@ -15,6 +15,7 @@ export type TableRoundSentEvent = { tableId: number | null; tableName: string | 
 export type TableItemDeliveredEvent = { tableId: number | null; tableOrderId: number; itemId: number; allDelivered: boolean };
 export type TableFreedEvent = { tableId: number };
 export type ReservationChangedEvent = { reservationId: number; tableIds: number[]; status: string };
+export type NotificationCreatedEvent = { id: number; type: string; severity: string; title: string; message: string; link: string | null; createdAt: string };
 
 @Injectable({ providedIn: 'root' })
 export class RealtimeService {
@@ -31,6 +32,7 @@ export class RealtimeService {
   tableItemDelivered$ = new Subject<TableItemDeliveredEvent>();
   tableFreed$ = new Subject<TableFreedEvent>();
   reservationChanged$ = new Subject<ReservationChangedEvent>();
+  notificationCreated$ = new Subject<NotificationCreatedEvent>();
 
   connect() {
     const user = this.auth.user();
@@ -56,7 +58,8 @@ export class RealtimeService {
       .listen('.table.round-sent', (e: any) => this.tableRoundSent$.next({ tableId: e.tableId, tableName: e.tableName, tableOrderId: e.tableOrderId, roundId: e.roundId, orderType: e.orderType }))
       .listen('.table.item-delivered', (e: any) => this.tableItemDelivered$.next({ tableId: e.tableId, tableOrderId: e.tableOrderId, itemId: e.itemId, allDelivered: e.allDelivered }))
       .listen('.table.freed', (e: any) => this.tableFreed$.next({ tableId: e.tableId }))
-      .listen('.reservation.changed', (e: any) => this.reservationChanged$.next({ reservationId: e.reservationId, tableIds: e.tableIds || [], status: e.status }));
+      .listen('.reservation.changed', (e: any) => this.reservationChanged$.next({ reservationId: e.reservationId, tableIds: e.tableIds || [], status: e.status }))
+      .listen('.notification.created', (e: any) => this.notificationCreated$.next({ id: e.id, type: e.type, severity: e.severity, title: e.title, message: e.message, link: e.link, createdAt: e.createdAt }));
 
     const connection = this.echo.connector?.pusher?.connection;
     if (connection) {

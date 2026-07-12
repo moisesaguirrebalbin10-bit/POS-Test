@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Events\LowStockAlert;
 use App\Events\StockUpdated;
 use App\Models\Concerns\BelongsToCompany;
+use App\Services\NotificationService;
 use App\Support\Broadcaster;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -40,6 +41,8 @@ class Product extends Model
             if ($product->stock <= $product->min_stock) {
                 Broadcaster::send(fn () => broadcast(new LowStockAlert($product))->toOthers());
             }
+
+            NotificationService::syncStockAlert($product, 'product');
         });
     }
 

@@ -1270,6 +1270,68 @@ html.app-dark .company-note { background: var(--surface-2); color: #93c5fd; }
 html.app-dark .user-menu-trigger { background: var(--surface-2); border-color: var(--line); }
 html.app-dark .user-menu-panel,
 html.app-dark .user-menu-panel .mat-mdc-menu-content { background: var(--surface) !important; }
+
+.bell-trigger { position: relative; margin-right: 4px; color: var(--ink); }
+.bell-badge {
+  position: absolute; top: 4px; right: 4px;
+  min-width: 16px; height: 16px; padding: 0 4px;
+  border-radius: 999px; background: #dc2626; color: #fff;
+  font-size: 10px; font-weight: 800; line-height: 16px; text-align: center;
+  box-shadow: 0 0 0 2px var(--surface);
+}
+.notif-menu-panel.mat-mdc-menu-panel {
+  width: 320px;
+  max-width: min(320px, 92vw) !important;
+  overflow-x: hidden;
+}
+.notif-panel { width: 100%; display: flex; flex-direction: column; min-width: 0; }
+.notif-panel-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 14px 16px 10px; }
+.notif-panel-head strong { font-size: 15px; color: var(--ink); }
+.notif-new-pill { padding: 2px 9px; border-radius: 999px; background: var(--primary); color: #fff; font-size: 11px; font-weight: 700; }
+.notif-panel-list {
+  max-height: 168px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  display: flex; flex-direction: column;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+.notif-empty { padding: 20px 16px; text-align: center; color: var(--muted); font-size: 13px; }
+.notif-row {
+  display: flex; align-items: flex-start; gap: 10px;
+  width: 100%; padding: 10px 16px; border: none; border-bottom: 1px solid var(--line);
+  background: transparent; cursor: pointer; text-align: left;
+}
+.notif-row:last-child { border-bottom: none; }
+.notif-row:hover { background: var(--surface-2); }
+.notif-row.unread { background: rgba(20, 130, 110, .06); }
+.notif-row-icon {
+  flex: none; display: flex; align-items: center; justify-content: center;
+  width: 32px; height: 32px; border-radius: 50%; background: var(--surface-2); color: var(--muted);
+}
+.notif-row-icon mat-icon { font-size: 18px; width: 18px; height: 18px; }
+.notif-row-icon.sev-warning { background: #fef3c7; color: #b45309; }
+.notif-row-icon.sev-critical { background: #fee2e2; color: #b91c1c; }
+.notif-row-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.notif-row-body strong { font-size: 13px; color: var(--ink); overflow-wrap: anywhere; }
+.notif-row-body small { font-size: 12px; color: var(--muted); overflow-wrap: anywhere; }
+.notif-row-dot { flex: none; width: 8px; height: 8px; margin-top: 6px; border-radius: 50%; background: var(--primary); }
+.notif-panel-footer { display: flex; flex-direction: column; gap: 4px; padding: 10px 16px 12px; }
+.notif-view-all { text-align: center; padding: 8px; border-radius: 8px; font-size: 13px; font-weight: 700; color: var(--primary); text-decoration: none; }
+.notif-view-all:hover { background: var(--surface-2); }
+.notif-mark-all { padding: 8px; border: 1px solid var(--line); border-radius: 8px; background: transparent; color: var(--ink); font-size: 13px; font-weight: 600; cursor: pointer; }
+.notif-mark-all:hover:not(:disabled) { background: var(--surface-2); }
+.notif-mark-all:disabled { opacity: .4; cursor: not-allowed; }
+html.app-dark .notif-menu-panel,
+html.app-dark .notif-menu-panel .mat-mdc-menu-content { background: var(--surface) !important; }
+html.app-dark .notif-row.unread { background: rgba(20, 130, 110, .12); }
+html.app-dark .notif-row-icon.sev-warning { background: rgba(180, 83, 9, .25); color: #fbbf24; }
+html.app-dark .notif-row-icon.sev-critical { background: rgba(185, 28, 28, .25); color: #f87171; }
+
+.notif-list-full { display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.notif-list-full .notif-row { padding: 14px 16px; }
+.notif-type-tag { margin-left: 8px; padding: 1px 8px; border-radius: 999px; background: var(--surface-2); color: var(--muted); font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; }
+.notif-row-time { color: var(--muted); opacity: .8; }
 html.app-light .p-dialog,
 html.app-light .p-dialog .p-dialog-header,
 html.app-light .p-dialog .p-dialog-content,

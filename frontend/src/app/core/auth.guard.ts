@@ -32,7 +32,7 @@ export const guestGuard: CanActivateFn = async () => {
   const licenseRedirect = await checkElectronLicense(router);
   if (licenseRedirect) return licenseRedirect;
   if (!auth.isLoggedIn()) { resetPublicTheme(); return true; }
-  return router.createUrlTree(['/app/dashboard']);
+  return router.createUrlTree([auth.defaultLandingRoute()]);
 };
 
 export const landingGuard: CanActivateFn = async () => {
@@ -40,8 +40,19 @@ export const landingGuard: CanActivateFn = async () => {
   const router = inject(Router);
   const licenseRedirect = await checkElectronLicense(router);
   if (licenseRedirect) return licenseRedirect;
-  if (window.posChifa) return router.createUrlTree([auth.isLoggedIn() ? '/app/dashboard' : '/login']);
-  if (auth.isLoggedIn()) return router.createUrlTree(['/app/dashboard']);
+  if (window.posChifa) return router.createUrlTree([auth.isLoggedIn() ? auth.defaultLandingRoute() : '/login']);
+  if (auth.isLoggedIn()) return router.createUrlTree([auth.defaultLandingRoute()]);
   resetPublicTheme();
   return true;
 };
+
+// Protege rutas de un solo modulo (ej. /app/kitchen) para que una cuenta sin ese
+// permiso no pueda entrar escribiendo la URL directamente.
+export function permissionGuard(permission: string): CanActivateFn {
+  return () => {
+    const auth = inject(AuthService);
+    const router = inject(Router);
+    if (auth.hasPermission(permission)) return true;
+    return router.createUrlTree([auth.defaultLandingRoute()]);
+  };
+}

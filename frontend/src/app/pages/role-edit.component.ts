@@ -13,7 +13,7 @@ const MODULE_ICONS: Record<string, string> = {
   Dashboard: 'dashboard', Usuarios: 'group', Roles: 'admin_panel_settings', Empresa: 'store',
   Almacenes: 'warehouse', Productos: 'inventory_2', Ventas: 'receipt_long', Caja: 'payments',
   'Ingresos/Egresos': 'swap_vert', Reportes: 'bar_chart', Registros: 'history', Equipos: 'print', Mesas: 'table_bar',
-  Reservas: 'event_available', Inventario: 'inventory',
+  Reservas: 'event_available', Inventario: 'inventory', Cocina: 'soup_kitchen',
 };
 const MODULE_DESCRIPTIONS: Record<string, string> = {
   Dashboard: 'Acceso a metricas, resumenes y analiticas generales.',
@@ -31,6 +31,7 @@ const MODULE_DESCRIPTIONS: Record<string, string> = {
   Mesas: 'Mapa de mesas, rondas y pedidos en salon.',
   Reservas: 'Reservas de mesas y notificacion de proximas llegadas.',
   Inventario: 'Insumos, articulos, recetas y kardex de stock (modo Restaurante).',
+  Cocina: 'Pantalla de cocina: ver tickets pendientes y marcar pedidos listos (modo Restaurante).',
 };
 
 @Component({

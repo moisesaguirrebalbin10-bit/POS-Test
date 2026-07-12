@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\BelongsToCompany;
+use App\Services\NotificationService;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -23,6 +24,15 @@ class Ingredient extends Model
         'is_composite' => 'boolean',
         'active' => 'boolean',
     ];
+
+    protected static function booted(): void
+    {
+        static::updated(function (Ingredient $ingredient) {
+            if ($ingredient->wasChanged('stock')) {
+                NotificationService::syncStockAlert($ingredient, 'ingredient');
+            }
+        });
+    }
 
     public function category(): BelongsTo
     {

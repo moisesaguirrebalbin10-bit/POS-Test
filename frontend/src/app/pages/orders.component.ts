@@ -11,6 +11,7 @@ import { DialogModule } from 'primeng/dialog';
 import { MessageService } from 'primeng/api';
 import { Subscription, firstValueFrom } from 'rxjs';
 import { ApiService } from '../core/api.service';
+import { AuthService } from '../core/auth.service';
 import { RealtimeService } from '../core/realtime.service';
 import { limaDateString } from '../core/lima-time';
 import { VoucherCopy, VoucherPdfService } from '../core/voucher-pdf.service';
@@ -48,7 +49,9 @@ type PickLine = { product_id: number; name: string; sale_price: number; quantity
         <p>{{cashPillText()}}</p>
       </div>
       <div class="header-actions">
-        <a mat-stroked-button routerLink="/app/kitchen"><mat-icon>soup_kitchen</mat-icon>Cocina</a>
+        @if (auth.hasPermission('kitchen.view')) {
+          <a mat-stroked-button routerLink="/app/kitchen"><mat-icon>soup_kitchen</mat-icon>Cocina</a>
+        }
         <button mat-stroked-button [class.active-toggle]="statusFilter === 'paid'" (click)="toggleHistory()"><mat-icon>history</mat-icon>Historial</button>
         <a mat-flat-button class="primary-action" routerLink="/app/orders/new"><mat-icon>add</mat-icon>Crear Orden</a>
       </div>
@@ -515,7 +518,7 @@ type PickLine = { product_id: number; name: string; sale_price: number; quantity
 })
 export class OrdersComponent implements OnInit, OnDestroy {
   api = inject(ApiService); cdr = inject(ChangeDetectorRef); messages = inject(MessageService);
-  realtime = inject(RealtimeService); voucherPdf = inject(VoucherPdfService);
+  realtime = inject(RealtimeService); voucherPdf = inject(VoucherPdfService); auth = inject(AuthService);
 
   rows: OrderRow[] = [];
   stats: OrderStats | null = null;

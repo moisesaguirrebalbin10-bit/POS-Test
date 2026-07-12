@@ -15,6 +15,7 @@ import { BrandingService } from '../core/branding.service';
 import { RealtimeService } from '../core/realtime.service';
 import { ApiService } from '../core/api.service';
 import { ReservationAlertsService } from '../core/reservation-alerts.service';
+import { NotificationsService, NotificationItem } from '../core/notifications.service';
 import { BusinessTypeOnboardingComponent } from './business-type-onboarding.component';
 import { ReservationAlertsComponent } from './reservation-alerts.component';
 
@@ -68,6 +69,37 @@ type ThemeMode = 'light' | 'dark' | 'system';
         <button type="button" class="theme-switch" [class.is-dark]="resolvedDark()" (click)="toggleTheme()" [title]="resolvedDark() ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro'" aria-label="Cambiar tema">
           <span class="theme-switch-thumb"><mat-icon>{{resolvedDark() ? 'dark_mode' : 'light_mode'}}</mat-icon></span>
         </button>
+        <button mat-icon-button class="bell-trigger" [matMenuTriggerFor]="notifMenu" #notifTrigger="matMenuTrigger" (click)="notifications.load()" aria-label="Notificaciones" title="Notificaciones">
+          <mat-icon>notifications</mat-icon>
+          @if (notifications.unreadCount() > 0) { <span class="bell-badge">{{notifications.badgeText()}}</span> }
+        </button>
+        <mat-menu #notifMenu="matMenu" xPosition="before" class="notif-menu-panel">
+          <div class="notif-panel" (click)="$event.stopPropagation()">
+            <div class="notif-panel-head">
+              <strong>Notificaciones</strong>
+              @if (notifications.unreadCount() > 0) { <span class="notif-new-pill">{{notifications.badgeText()}} nuevas</span> }
+            </div>
+            <div class="notif-panel-list">
+              @if (!notifications.notifications().length) {
+                <div class="notif-empty">Sin notificaciones pendientes.</div>
+              }
+              @for (n of notifications.notifications(); track n.id) {
+                <button type="button" class="notif-row" [class.unread]="!n.read_at" (click)="openNotification(n); notifTrigger.closeMenu()">
+                  <span class="notif-row-icon" [class]="'sev-' + n.severity"><mat-icon>{{notifIcon(n.type)}}</mat-icon></span>
+                  <span class="notif-row-body">
+                    <strong>{{n.title}}</strong>
+                    <small>{{n.message}}</small>
+                  </span>
+                  @if (!n.read_at) { <span class="notif-row-dot"></span> }
+                </button>
+              }
+            </div>
+            <div class="notif-panel-footer">
+              <a routerLink="/app/notifications" class="notif-view-all" (click)="notifTrigger.closeMenu()">Ver todas las notificaciones</a>
+              <button type="button" class="notif-mark-all" [disabled]="!notifications.unreadCount()" (click)="notifications.markAllRead()">Marcar todas como vista</button>
+            </div>
+          </div>
+        </mat-menu>
         <button mat-button class="user-menu-trigger" [matMenuTriggerFor]="userMenu">
           <span class="user-menu-content">
             <span class="user-avatar"><mat-icon>person</mat-icon></span>
@@ -102,7 +134,7 @@ type ThemeMode = 'light' | 'dark' | 'system';
 export class ShellComponent implements AfterViewInit {
   auth = inject(AuthService); router = inject(Router); user = this.auth.user(); branding = inject(BrandingService);
   realtime = inject(RealtimeService); messages = inject(MessageService); api = inject(ApiService);
-  reservationAlerts = inject(ReservationAlertsService);
+  reservationAlerts = inject(ReservationAlertsService); notifications = inject(NotificationsService);
   private breakpointObserver = inject(BreakpointObserver);
   theme: ThemeMode = (localStorage.getItem('pos-theme') as ThemeMode) || 'light';
   private media = window.matchMedia('(prefers-color-scheme: dark)');
@@ -113,23 +145,24 @@ export class ShellComponent implements AfterViewInit {
   sidenavOpened = true;
   @ViewChild('scrollContent', { read: ElementRef }) scrollContent?: ElementRef<HTMLElement>;
   menu: { path: string; icon: string; label: string; permission?: string; businessType?: 'restaurant' | 'market'; section: 'principal' | 'gestion' }[] = [
-    { path: '/app/dashboard', icon: 'dashboard', label: 'Dashboard', section: 'principal' },
-    { path: '/app/pos', icon: 'point_of_sale', label: 'POS', businessType: 'market', section: 'principal' },
+    { path: '/app/dashboard', icon: 'dashboard', label: 'Dashboard', permission: 'dashboard.view', section: 'principal' },
+    { path: '/app/pos', icon: 'point_of_sale', label: 'POS', permission: 'sales.create', businessType: 'market', section: 'principal' },
     { path: '/app/orders', icon: 'receipt_long', label: 'Ordenes', permission: 'tables.manage', businessType: 'restaurant', section: 'principal' },
     { path: '/app/tables', icon: 'table_bar', label: 'Mesas', permission: 'tables.manage', businessType: 'restaurant', section: 'principal' },
-    { path: '/app/carta', icon: 'restaurant_menu', label: 'Carta', businessType: 'restaurant', section: 'principal' },
-    { path: '/app/products', icon: 'inventory_2', label: 'Productos', businessType: 'market', section: 'principal' },
-    { path: '/app/warehouses', icon: 'warehouse', label: 'Almacenes', businessType: 'market', section: 'gestion' },
+    { path: '/app/kitchen', icon: 'soup_kitchen', label: 'Cocina', permission: 'kitchen.view', businessType: 'restaurant', section: 'principal' },
+    { path: '/app/carta', icon: 'restaurant_menu', label: 'Carta', permission: 'products.view', businessType: 'restaurant', section: 'principal' },
+    { path: '/app/products', icon: 'inventory_2', label: 'Productos', permission: 'products.view', businessType: 'market', section: 'principal' },
+    { path: '/app/warehouses', icon: 'warehouse', label: 'Almacenes', permission: 'warehouses.view', businessType: 'market', section: 'gestion' },
     { path: '/app/inventory', icon: 'inventory', label: 'Inventario', permission: 'inventory.manage', businessType: 'restaurant', section: 'gestion' },
-    { path: '/app/sales', icon: 'receipt_long', label: 'Ventas', section: 'gestion' },
-    { path: '/app/cash', icon: 'payments', label: 'Caja', section: 'gestion' },
-    { path: '/app/movements', icon: 'swap_vert', label: 'Ingresos/Egresos', section: 'gestion' },
+    { path: '/app/sales', icon: 'receipt_long', label: 'Ventas', permission: 'sales.view', section: 'gestion' },
+    { path: '/app/cash', icon: 'payments', label: 'Caja', permission: 'cash.view', section: 'gestion' },
+    { path: '/app/movements', icon: 'swap_vert', label: 'Ingresos/Egresos', permission: 'movements.view', section: 'gestion' },
     { path: '/app/reservations', icon: 'event_available', label: 'Reservas', permission: 'reservations.manage', businessType: 'restaurant', section: 'gestion' },
-    { path: '/app/reports', icon: 'bar_chart', label: 'Reportes', section: 'gestion' },
-    { path: '/app/users', icon: 'group', label: 'Usuarios', section: 'gestion' },
-    { path: '/app/roles', icon: 'admin_panel_settings', label: 'Roles', section: 'gestion' },
-    { path: '/app/company', icon: 'store', label: 'Empresa', section: 'gestion' },
-    { path: '/app/system-branding', icon: 'palette', label: 'Nombre y Logo', section: 'gestion' },
+    { path: '/app/reports', icon: 'bar_chart', label: 'Reportes', permission: 'reports.view', section: 'gestion' },
+    { path: '/app/users', icon: 'group', label: 'Usuarios', permission: 'users.view', section: 'gestion' },
+    { path: '/app/roles', icon: 'admin_panel_settings', label: 'Roles', permission: 'roles.view', section: 'gestion' },
+    { path: '/app/company', icon: 'store', label: 'Empresa', permission: 'settings.view', section: 'gestion' },
+    { path: '/app/system-branding', icon: 'palette', label: 'Nombre y Logo', permission: 'settings.update', section: 'gestion' },
     { path: '/app/device-settings', icon: 'print', label: 'Equipos', permission: 'devices.manage', section: 'gestion' },
     { path: '/app/activity-logs', icon: 'history', label: 'Registros', permission: 'logs.view', section: 'gestion' }
   ];
@@ -145,7 +178,19 @@ export class ShellComponent implements AfterViewInit {
     return this.visibleMenu().filter(item => item.section === section);
   }
   hasPermission(key: string): boolean {
-    return !!this.user?.roles?.some((role: any) => role.permissions?.some((p: any) => p.key === key));
+    return this.auth.hasPermission(key);
+  }
+
+  notifIcon(type: string): string {
+    if (type === 'out_of_stock') return 'remove_shopping_cart';
+    if (type === 'low_stock') return 'inventory_2';
+    if (type === 'order_delay') return 'schedule';
+    return 'notifications';
+  }
+
+  openNotification(n: NotificationItem) {
+    this.notifications.markRead(n);
+    if (n.link) this.router.navigateByUrl(n.link);
   }
 
   constructor() {
@@ -156,6 +201,7 @@ export class ShellComponent implements AfterViewInit {
     this.realtime.connect();
     this.realtime.lowStockAlert$.subscribe(e => this.messages.add({ severity: 'warn', summary: 'Stock bajo', detail: `${e.name}: quedan ${e.stock} (minimo ${e.minStock}).` }));
     this.realtime.cashRegisterChanged$.subscribe(e => this.messages.add({ severity: 'info', summary: 'Caja', detail: `${e.userName} ${e.status === 'open' ? 'abrio' : 'cerro'} una caja.` }));
+    this.notifications.start();
 
     if (!this.user?.company?.business_type_selected_at && this.hasPermission('settings.update')) {
       this.showOnboarding = true;

@@ -45,6 +45,40 @@ export class AuthService {
   user() { return JSON.parse(localStorage.getItem('user') || sessionStorage.getItem('user') || 'null'); }
   isLoggedIn() { return !!this.token(); }
 
+  // Acepta una sola clave o varias separadas por coma (igual que el middleware
+  // "permission:a,b" del backend) para exigir cualquiera de ellas (logica OR).
+  hasPermission(key: string): boolean {
+    const user = this.user();
+    const keys = key.split(',').map(k => k.trim()).filter(Boolean);
+    return keys.some(k => user?.roles?.some((role: any) => role.permissions?.some((p: any) => p.key === k)));
+  }
+
+  // Primera vista a la que un usuario tiene acceso segun sus permisos, en el mismo
+  // orden en que aparecen en el menu lateral (shell.component.ts). Evita mandar a
+  // cuentas de un solo modulo (ej. Cocina) a un Dashboard que no pueden ver.
+  defaultLandingRoute(): string {
+    const candidates: { path: string; permission?: string }[] = [
+      { path: '/app/dashboard', permission: 'dashboard.view' },
+      { path: '/app/orders', permission: 'tables.manage' },
+      { path: '/app/kitchen', permission: 'kitchen.view' },
+      { path: '/app/tables', permission: 'tables.manage' },
+      { path: '/app/pos', permission: 'sales.create' },
+      { path: '/app/reservations', permission: 'reservations.manage' },
+      { path: '/app/inventory', permission: 'inventory.manage' },
+      { path: '/app/products', permission: 'products.view' },
+      { path: '/app/sales', permission: 'sales.view' },
+      { path: '/app/cash', permission: 'cash.view' },
+      { path: '/app/reports', permission: 'reports.view' },
+      { path: '/app/warehouses', permission: 'warehouses.view' },
+      { path: '/app/users', permission: 'users.view' },
+      { path: '/app/company', permission: 'settings.view' },
+    ];
+    const match = candidates.find(c => !c.permission || this.hasPermission(c.permission));
+    // '/app/dashboard' no exige permiso a nivel de ruta (solo se oculta del menu),
+    // asi que sirve de red de seguridad si un rol quedo sin ningun permiso asignado.
+    return match?.path || '/app/dashboard';
+  }
+
   // La sesion activa vive en localStorage (Recordarme) o sessionStorage; escribimos
   // siempre en la que realmente tiene el token para no dejar una copia obsoleta en la otra.
   updateUser(user: any) {

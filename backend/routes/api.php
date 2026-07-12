@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\IngredientController;
 use App\Http\Controllers\Api\InventorySummaryController;
 use App\Http\Controllers\Api\KardexController;
 use App\Http\Controllers\Api\LicenseController;
+use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\RecipeController;
 use App\Http\Controllers\Api\RegisterController;
@@ -39,6 +40,11 @@ Route::middleware(['auth:sanctum', 'tenant'])->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me', [AuthController::class, 'me']);
     Route::get('/branding', [CompanySettingController::class, 'branding']);
+
+    Route::get('/notifications', [NotificationController::class, 'index']);
+    Route::get('/notifications-all', [NotificationController::class, 'all']);
+    Route::post('/notifications/{notification}/read', [NotificationController::class, 'markRead']);
+    Route::post('/notifications/mark-all-read', [NotificationController::class, 'markAllRead']);
 
     Route::get('/dashboard', DashboardController::class)->middleware('permission:dashboard.view');
     Route::get('/dashboard/trends', [DashboardController::class, 'trends'])->middleware('permission:dashboard.view');
@@ -112,7 +118,6 @@ Route::middleware(['auth:sanctum', 'tenant'])->group(function () {
     Route::middleware('permission:tables.manage')->group(function () {
         Route::apiResource('tables', RestaurantTableController::class)->only(['index', 'show', 'store', 'update', 'destroy']);
         Route::post('/tables/{table}/rounds', [RestaurantTableOrderController::class, 'storeRound']);
-        Route::patch('/table-order-items/{item}/deliver', [RestaurantTableOrderController::class, 'deliverItem']);
         Route::post('/table-orders/{tableOrder}/charge', [RestaurantTableOrderController::class, 'charge']);
         Route::post('/table-orders/{tableOrder}/rounds', [RestaurantTableOrderController::class, 'addRound']);
         Route::post('/table-orders/{tableOrder}/advance-payment', [RestaurantTableOrderController::class, 'advancePayment']);
@@ -122,8 +127,14 @@ Route::middleware(['auth:sanctum', 'tenant'])->group(function () {
         Route::get('/orders', [RestaurantTableOrderController::class, 'index']);
         Route::post('/orders', [RestaurantTableOrderController::class, 'store']);
         Route::get('/orders-stats', [RestaurantTableOrderController::class, 'stats']);
-        Route::get('/orders-kitchen', [RestaurantTableOrderController::class, 'kitchen']);
         Route::get('/orders-most-ordered', [RestaurantTableOrderController::class, 'mostOrdered']);
+    });
+
+    // La pantalla de Cocina y el marcado de items listos los puede usar tanto quien
+    // gestiona mesas (mesero/admin) como una cuenta dedicada solo a cocina.
+    Route::middleware('permission:tables.manage,kitchen.view')->group(function () {
+        Route::get('/orders-kitchen', [RestaurantTableOrderController::class, 'kitchen']);
+        Route::patch('/table-order-items/{item}/deliver', [RestaurantTableOrderController::class, 'deliverItem']);
     });
 
     Route::middleware('permission:reservations.manage')->group(function () {

@@ -52,6 +52,7 @@ class TenantProvisioner
             ['tables.manage', 'Mesas', 'Gestionar mesas y pedidos (modo Restaurante)'],
             ['reservations.manage', 'Reservas', 'Gestionar reservas de mesas (modo Restaurante)'],
             ['inventory.manage', 'Inventario', 'Gestionar insumos, articulos, recetas y kardex (modo Restaurante)'],
+            ['kitchen.view', 'Cocina', 'Ver pantalla de cocina y marcar pedidos listos (modo Restaurante)'],
         ];
     }
 
@@ -84,12 +85,16 @@ class TenantProvisioner
         $cashier = Role::firstOrCreate(['company_id' => $company->id, 'name' => 'Cajero'], ['description' => 'Ventas y caja']);
         $warehouse = Role::firstOrCreate(['company_id' => $company->id, 'name' => 'Almacen'], ['description' => 'Inventario y stock']);
         $supervisor = Role::firstOrCreate(['company_id' => $company->id, 'name' => 'Supervisor'], ['description' => 'Reportes y supervision']);
+        $waiter = Role::firstOrCreate(['company_id' => $company->id, 'name' => 'Mesero'], ['description' => 'Toma de pedidos y mesas (modo Restaurante)']);
+        $cook = Role::firstOrCreate(['company_id' => $company->id, 'name' => 'Cocinero'], ['description' => 'Pantalla de cocina (modo Restaurante)']);
 
         $admin->permissions()->sync(Permission::pluck('id'));
         $cashier->permissions()->sync(Permission::whereIn('key', ['dashboard.view', 'products.view', 'sales.view', 'sales.create', 'cash.view', 'cash.open', 'cash.close', 'movements.view', 'movements.create', 'tables.manage'])->pluck('id'));
         $warehouse->permissions()->sync(Permission::whereIn('key', ['dashboard.view', 'products.view', 'products.create', 'products.update', 'warehouses.view', 'warehouses.update', 'warehouses.transfer'])->pluck('id'));
         $supervisor->permissions()->sync(Permission::whereIn('key', ['dashboard.view', 'reports.view', 'reports.export', 'sales.view', 'products.view', 'cash.view', 'movements.view'])->pluck('id'));
+        $waiter->permissions()->sync(Permission::whereIn('key', ['tables.manage', 'reservations.manage'])->pluck('id'));
+        $cook->permissions()->sync(Permission::whereIn('key', ['kitchen.view'])->pluck('id'));
 
-        return compact('admin', 'cashier', 'warehouse', 'supervisor');
+        return compact('admin', 'cashier', 'warehouse', 'supervisor', 'waiter', 'cook');
     }
 }

@@ -144,7 +144,7 @@ export class LoginComponent {
     if (this.form.invalid || this.loading) return;
     this.loading = true; this.error = '';
     this.auth.login(this.form.value.email!, this.form.value.password!, this.remember).subscribe({
-      next: () => this.router.navigateByUrl('/app/dashboard'),
+      next: () => this.router.navigateByUrl(this.auth.defaultLandingRoute()),
       error: e => { this.loading = false; this.error = e.error?.message || 'No se pudo iniciar sesion'; this.cdr.detectChanges(); }
     });
   }

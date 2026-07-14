@@ -193,7 +193,7 @@ type CartLine = {
         </div>
 
         @if (cashMessage) { <div class="cash-required"><mat-icon>lock</mat-icon><span>{{cashMessage}}</span></div> }
-        <button mat-flat-button class="pay-btn" (click)="openConfirmModal()" [disabled]="!cart.length || !currentCash || printing">
+        <button mat-flat-button class="pay-btn" (click)="openConfirmModal()" [disabled]="!cart.length || !currentCash || printing || savingWithoutReceipt">
           <mat-icon>receipt_long</mat-icon>
           Confirmar venta
         </button>
@@ -202,15 +202,15 @@ type CartLine = {
           <div class="reprint-actions">
             <span>Venta #{{lastSaleId}} registrada. Reimprimir:</span>
             <div class="reprint-buttons">
-              <button mat-stroked-button [disabled]="printing" (click)="reprint(lastSaleId, 'customer')"><mat-icon>receipt</mat-icon>Boleta cliente</button>
-              <button mat-stroked-button [disabled]="printing" (click)="reprint(lastSaleId, 'local')"><mat-icon>store</mat-icon>Copia local</button>
+              <button mat-stroked-button [disabled]="printing || savingWithoutReceipt" (click)="reprint(lastSaleId, 'customer')"><mat-icon>receipt</mat-icon>Boleta cliente</button>
+              <button mat-stroked-button [disabled]="printing || savingWithoutReceipt" (click)="reprint(lastSaleId, 'local')"><mat-icon>store</mat-icon>Copia local</button>
             </div>
           </div>
         }
       </aside>
     </section>
 
-    <p-dialog [(visible)]="confirmModalOpen" [modal]="true" [dismissableMask]="!printing" [closable]="!printing" [style]="{ width: 'min(480px, 94vw)' }" header="Nota de venta">
+    <p-dialog [(visible)]="confirmModalOpen" [modal]="true" [dismissableMask]="!printing && !savingWithoutReceipt" [closable]="!printing && !savingWithoutReceipt" [style]="{ width: 'min(480px, 94vw)' }" header="Nota de venta">
       <div class="sale-preview">
         <div class="sale-preview-row"><span>Cliente</span><b>{{customer || 'Cliente General'}}</b></div>
         <div class="sale-preview-row"><span>Metodo de pago</span><b>{{paymentLabel()}}</b></div>
@@ -229,9 +229,10 @@ type CartLine = {
         }
       </div>
       <ng-template pTemplate="footer">
-        <div class="modal-actions">
-          <button mat-stroked-button [disabled]="printing" (click)="closeConfirmModal()">Cancelar</button>
-          <button mat-flat-button class="primary-action" [disabled]="printing" (click)="confirm()"><mat-icon>print</mat-icon>{{printing ? 'Imprimiendo...' : 'Imprimir'}}</button>
+        <div class="modal-actions sale-confirm-actions">
+          <button mat-stroked-button [disabled]="printing || savingWithoutReceipt" (click)="closeConfirmModal()">Cancelar</button>
+          <button mat-stroked-button [disabled]="printing || savingWithoutReceipt" (click)="confirmWithoutReceipt()"><mat-icon>done</mat-icon>{{savingWithoutReceipt ? 'Guardando...' : 'Confirmar sin comprobante'}}</button>
+          <button mat-flat-button class="primary-action" [disabled]="printing || savingWithoutReceipt" (click)="confirmWithReceipt()"><mat-icon>print</mat-icon>{{printing ? 'Imprimiendo...' : 'Confirmar e imprimir'}}</button>
         </div>
       </ng-template>
     </p-dialog>
@@ -263,6 +264,7 @@ export class PosComponent implements OnInit, OnDestroy {
   confirmModalOpen = false;
   lastSaleId: number | null = null;
   printing = false;
+  savingWithoutReceipt = false;
   paymentLabels: Record<string, string> = { cash: 'Efectivo', yape: 'Yape', plin: 'Plin', card: 'Tarjeta', transfer: 'Transferencia', mixed: 'Mixto' };
 
   pdfPreviewVisible = false;
@@ -394,22 +396,45 @@ export class PosComponent implements OnInit, OnDestroy {
     if (!this.cart.length || !this.currentCash) return;
     this.confirmModalOpen = true;
   }
-  closeConfirmModal() { if (!this.printing) this.confirmModalOpen = false; }
+  closeConfirmModal() { if (!this.printing && !this.savingWithoutReceipt) this.confirmModalOpen = false; }
 
-  confirm() {
-    this.api.post<any>('sales', {
+  private createSale() {
+    return this.api.post<any>('sales', {
       customer_name: this.customer,
       payment_method: this.payment,
       tip: this.tip,
       items: this.cart.map(({ product_id, quantity }) => ({ product_id, quantity }))
-    }).subscribe(async (s: any) => {
-      this.cart = [];
-      this.amountReceived = 0;
-      this.lastSaleId = s.id;
-      this.confirmModalOpen = false;
-      this.loadOpenCash();
-      this.reloadProducts();
-      this.printing = true;
+    });
+  }
+
+  private onSaleCreated(sale: any) {
+    this.cart = [];
+    this.amountReceived = 0;
+    this.lastSaleId = sale.id;
+    this.confirmModalOpen = false;
+    this.loadOpenCash();
+    this.reloadProducts();
+  }
+
+  confirmWithoutReceipt() {
+    if (this.printing || this.savingWithoutReceipt) return;
+    this.savingWithoutReceipt = true;
+    this.createSale().subscribe({
+      next: (s: any) => {
+        this.onSaleCreated(s);
+        this.savingWithoutReceipt = false;
+        this.messages.add({ severity: 'success', summary: 'Venta registrada', detail: `Venta #${s.id} confirmada sin comprobante.` });
+        this.cdr.detectChanges();
+      },
+      error: () => { this.savingWithoutReceipt = false; this.cdr.detectChanges(); }
+    });
+  }
+
+  confirmWithReceipt() {
+    if (this.printing || this.savingWithoutReceipt) return;
+    this.printing = true;
+    this.createSale().subscribe(async (s: any) => {
+      this.onSaleCreated(s);
       this.cdr.detectChanges();
       try {
         await this.printSale(s.id, 'customer', true);

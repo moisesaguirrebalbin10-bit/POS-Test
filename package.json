@@ -18,14 +18,13 @@
                         },
     "build":  {
                   "appId":  "com.optiuso.desktop",
-                  "productName":  "OptiUso",
+                  "productName":  "OptiUso POS",
                   "directories":  {
                                       "output":  "Aplicativo"
                                   },
                   "files":  [
                                 "electron/**/*",
                                 "!electron/icon.ico",
-                                "!electron/Logo_Vendomax.png",
                                 "package.json"
                             ],
                   "extraResources":  [

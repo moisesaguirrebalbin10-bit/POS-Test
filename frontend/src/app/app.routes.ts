@@ -34,6 +34,7 @@ import { AdminPaymentsComponent } from './admin/pages/admin-payments.component';
 import { AdminLogsComponent } from './admin/pages/admin-logs.component';
 import { AdminStaffComponent } from './admin/pages/admin-staff.component';
 import { AdminStaffRolesComponent } from './admin/pages/admin-staff-roles.component';
+import { AdminSecurityComponent } from './admin/pages/admin-security.component';
 
 export const routes: Routes = [
   { path: '', pathMatch: 'full', component: LandingComponent, canActivate: [landingGuard] },
@@ -84,6 +85,7 @@ export const routes: Routes = [
       { path: 'logs', component: AdminLogsComponent },
       { path: 'staff', component: AdminStaffComponent },
       { path: 'staff-roles', component: AdminStaffRolesComponent },
+      { path: 'security', component: AdminSecurityComponent },
     ]
   },
   { path: '**', redirectTo: '' }

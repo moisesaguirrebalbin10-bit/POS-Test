@@ -14,6 +14,7 @@ class RestaurantTableOrder extends Model
     protected $fillable = [
         'restaurant_table_id', 'type', 'status', 'customer_name', 'customer_phone',
         'delivery_address', 'notes', 'tip', 'amount_paid', 'sale_id', 'created_by', 'opened_at', 'closed_at',
+        'cancel_reason', 'cancelled_at', 'cancelled_by',
     ];
 
     protected $casts = [
@@ -21,6 +22,7 @@ class RestaurantTableOrder extends Model
         'amount_paid' => 'decimal:2',
         'opened_at' => 'datetime',
         'closed_at' => 'datetime',
+        'cancelled_at' => 'datetime',
     ];
 
     public const TYPE_LABELS = ['mesa' => 'Mesa', 'para_llevar' => 'Para llevar', 'delivery' => 'Delivery'];
@@ -43,6 +45,11 @@ class RestaurantTableOrder extends Model
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function canceller(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'cancelled_by');
     }
 
     public function typeLabel(): string

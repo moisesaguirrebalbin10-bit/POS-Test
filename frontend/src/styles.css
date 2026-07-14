@@ -1163,6 +1163,9 @@ html.app-dark .company-note { background: var(--surface-2); color: #93c5fd; }
   font-size: 14px;
 }
 .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px; }
+.sale-confirm-actions { flex-wrap: wrap; }
+.sale-confirm-actions button { flex: 1 1 auto; white-space: nowrap; }
+.sale-confirm-actions button:first-child { flex: 0 0 auto; }
 .table-actions { gap: 4px; }
 @media (max-width: 900px) { .modal-grid { grid-template-columns: 1fr; } .cash-row { min-width: 860px; } .reports-filter-panel { flex-direction: column; align-items: stretch; } }
 .cash-required { display: flex; align-items: center; gap: 8px; margin: 10px 0 12px; padding: 10px 12px; border-radius: 8px; background: #fff7ed; color: #9a3412; border: 1px solid #fed7aa; font-size: 13px; font-weight: 700; }

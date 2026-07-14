@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\ActivityLogAdminController;
 use App\Http\Controllers\Admin\AdminAuthController;
+use App\Http\Controllers\Admin\BlockedIpController;
 use App\Http\Controllers\Admin\CompanyAdminController;
 use App\Http\Controllers\Admin\NotificationController;
 use App\Http\Controllers\Admin\PaymentAdminController;
@@ -13,9 +14,9 @@ use App\Http\Controllers\Admin\StatsController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('admin')->group(function () {
-    Route::post('/login', [AdminAuthController::class, 'login']);
+    Route::post('/login', [AdminAuthController::class, 'login'])->middleware('throttle:6,1,admin-login');
 
-    Route::middleware(['auth:sanctum', 'platform-admin'])->group(function () {
+    Route::middleware(['auth:sanctum', 'platform-admin', 'throttle:120,1,admin-api'])->group(function () {
         Route::post('/logout', [AdminAuthController::class, 'logout']);
         Route::get('/me', [AdminAuthController::class, 'me']);
 
@@ -40,6 +41,9 @@ Route::prefix('admin')->group(function () {
 
         Route::get('/activity-logs', [ActivityLogAdminController::class, 'index'])->middleware('platform-permission:logs.view');
         Route::get('/activity-logs-stats', [ActivityLogAdminController::class, 'stats'])->middleware('platform-permission:logs.view');
+
+        Route::get('/blocked-ips', [BlockedIpController::class, 'index'])->middleware('platform-permission:security.manage');
+        Route::delete('/blocked-ips/{blockedIp}', [BlockedIpController::class, 'destroy'])->middleware('platform-permission:security.manage');
 
         Route::get('/staff-stats', [StaffController::class, 'stats'])->middleware('platform-permission:staff.manage');
         Route::apiResource('staff', StaffController::class)->middleware('platform-permission:staff.manage');

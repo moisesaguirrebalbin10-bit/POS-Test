@@ -26,6 +26,7 @@ type OrderRow = {
   tip: number | string; total: number; amount_paid: number; balance_due: number; sale_id: number | null;
   creator: { id: number; name: string } | null;
   opened_at: string; closed_at: string | null;
+  cancel_reason: string | null; cancelled_at: string | null; canceller: { id: number; name: string } | null;
   rounds: RoundRow[];
 };
 type OrderStats = {
@@ -79,6 +80,7 @@ type PickLine = { product_id: number; name: string; sale_price: number; quantity
         <option value="open">Abiertas</option>
         <option value="awaiting_payment">Por Cobrar</option>
         <option value="paid">Pagadas</option>
+        <option value="cancelled">Canceladas</option>
       </select>
       <select class="date-preset-select" [(ngModel)]="typeFilter" (ngModelChange)="onFiltersChange()">
         <option value="">Todos los Tipos</option>
@@ -168,6 +170,15 @@ type PickLine = { product_id: number; name: string; sale_price: number; quantity
             </div>
           }
           @if (selected.notes) { <div class="order-notes-box"><mat-icon>notes</mat-icon>{{selected.notes}}</div> }
+          @if (selected.status === 'cancelled') {
+            <div class="order-cancel-box">
+              <mat-icon>block</mat-icon>
+              <div>
+                <b>Orden cancelada{{selected.canceller ? ' por ' + selected.canceller.name : ''}}{{selected.cancelled_at ? ' - ' + (selected.cancelled_at | date:'dd/MM/yyyy HH:mm') : ''}}</b>
+                @if (selected.cancel_reason) { <small>Motivo: {{selected.cancel_reason}}</small> }
+              </div>
+            </div>
+          }
 
           <div class="order-items-section-head">
             <span>ITEMS ({{itemCount(selected)}})</span>
@@ -201,16 +212,19 @@ type PickLine = { product_id: number; name: string; sale_price: number; quantity
 
         <footer class="side-panel-footer">
           <div class="order-modal-actions">
-            <button mat-flat-button class="pay-btn" [disabled]="selected.status === 'paid'" (click)="openPayment()">
+            <button mat-flat-button class="pay-btn" [disabled]="selected.status === 'paid' || selected.status === 'cancelled'" (click)="openPayment()">
               <mat-icon>payments</mat-icon>Pagar y completar {{selected.balance_due | currency:'PEN':'S/ '}}
             </button>
-            <button mat-stroked-button [disabled]="allItemsDone(selected)" (click)="markAllDone(selected)">
+            <button mat-stroked-button [disabled]="selected.status === 'cancelled' || allItemsDone(selected)" (click)="markAllDone(selected)">
               <mat-icon>done_all</mat-icon>Todo Listo
             </button>
             <div class="order-modal-secondary-actions">
-              <button type="button" [disabled]="selected.status === 'paid' || selected.balance_due <= 0" (click)="openAdvancePayment()"><mat-icon>savings</mat-icon>Cobro anticipado</button>
+              <button type="button" [disabled]="selected.status === 'paid' || selected.status === 'cancelled' || selected.balance_due <= 0" (click)="openAdvancePayment()"><mat-icon>savings</mat-icon>Cobro anticipado</button>
               <button type="button" (click)="previewDocument('comanda')"><mat-icon>receipt</mat-icon>Comanda</button>
               <button type="button" (click)="previewDocument('precuenta')"><mat-icon>description</mat-icon>Pre-cuenta</button>
+              @if (canCancel(selected)) {
+                <button type="button" class="order-cancel-btn" (click)="openCancel()"><mat-icon>block</mat-icon>Cancelar Orden</button>
+              }
             </div>
           </div>
         </footer>
@@ -272,6 +286,23 @@ type PickLine = { product_id: number; name: string; sale_price: number; quantity
         <div class="modal-actions">
           <button mat-stroked-button [disabled]="savingAdvance" (click)="advanceOpen = false">Cancelar</button>
           <button mat-flat-button class="primary-action" [disabled]="!advanceAmount || advanceAmount <= 0 || savingAdvance" (click)="confirmAdvance()"><mat-icon>savings</mat-icon>Registrar Cobro</button>
+        </div>
+      </ng-template>
+    </p-dialog>
+
+    <!-- Cancelar orden -->
+    <p-dialog [(visible)]="cancelOpen" [modal]="true" [dismissableMask]="!cancelling" [style]="{ width: 'min(420px, 94vw)' }" header="Cancelar orden">
+      @if (selected) {
+        <p class="advance-hint">Se cancelara la orden #{{orderCode(selected.id)}}{{selected.table ? ' (mesa ' + selected.table.name + ')' : ''}}. Esta accion queda registrada en el historial y no se puede deshacer.</p>
+        <mat-form-field appearance="outline" class="cancel-reason-field">
+          <mat-label>Motivo de la cancelacion</mat-label>
+          <textarea matInput rows="3" maxlength="255" [(ngModel)]="cancelReason" placeholder="Ej: orden duplicada, error al tomar el pedido..."></textarea>
+        </mat-form-field>
+      }
+      <ng-template pTemplate="footer">
+        <div class="modal-actions">
+          <button mat-stroked-button [disabled]="cancelling" (click)="cancelOpen = false">Volver</button>
+          <button mat-flat-button class="order-cancel-confirm-btn" [disabled]="!cancelReason.trim() || cancelling" (click)="confirmCancel()"><mat-icon>block</mat-icon>{{cancelling ? 'Cancelando...' : 'Cancelar Orden'}}</button>
         </div>
       </ng-template>
     </p-dialog>
@@ -410,6 +441,18 @@ type PickLine = { product_id: number; name: string; sale_price: number; quantity
     .order-status-chip-open { background: #fde8e8; color: #c22a2a; }
     .order-status-chip-awaiting_payment { background: #fff1e0; color: #c2410c; }
     .order-status-chip-paid { background: #e8f7f1; color: #047857; }
+    .order-status-chip-cancelled { background: #f1f2f4; color: #565f6b; }
+
+    .order-cancel-btn { color: #c22a2a !important; border-color: #f3caca !important; }
+    .order-cancel-btn:hover:not(:disabled) { background: #fdecec !important; }
+    .order-cancel-confirm-btn { background: #c22a2a !important; color: #fff !important; }
+    .order-cancel-confirm-btn:hover:not(:disabled) { background: #a51f1f !important; }
+    .order-cancel-box { display: flex; align-items: flex-start; gap: 8px; padding: 10px 12px; border-radius: 10px; background: #f1f2f4; color: #4b5563; font-size: 13px; margin-bottom: 12px; }
+    .order-cancel-box mat-icon { flex: none; font-size: 18px; width: 18px; height: 18px; margin-top: 1px; }
+    .order-cancel-box b { display: block; }
+    .order-cancel-box small { display: block; color: var(--muted); margin-top: 2px; }
+    html.app-dark .order-cancel-box { background: var(--surface-2); color: var(--ink); }
+    .cancel-reason-field { width: 100%; }
 
     .side-panel-backdrop { position: fixed; inset: 0; background: rgba(15, 23, 31, .45); z-index: 1000; animation: side-panel-fade .15s ease; }
     .side-panel {
@@ -536,6 +579,8 @@ export class OrdersComponent implements OnInit, OnDestroy {
 
   advanceOpen = false; advanceAmount: number | null = null; advanceMethod = 'cash'; savingAdvance = false;
 
+  cancelOpen = false; cancelReason = ''; cancelling = false;
+
   paymentOpen = false; payCustomer = 'Cliente General'; payMethod = ''; payTip = 0; payDiscountPercent = 0; printing = false;
   paymentMethods: { value: string; label: string; icon: string }[] = [
     { value: 'cash', label: 'Efectivo', icon: 'payments' },
@@ -555,7 +600,7 @@ export class OrdersComponent implements OnInit, OnDestroy {
 
   private subs: Subscription[] = [];
 
-  statusLabels: Record<string, string> = { open: 'Preparando', awaiting_payment: 'Por cobrar', paid: 'Pagada' };
+  statusLabels: Record<string, string> = { open: 'Preparando', awaiting_payment: 'Por cobrar', paid: 'Pagada', cancelled: 'Cancelada' };
   typeIcons: Record<string, string> = { mesa: 'table_bar', para_llevar: 'shopping_bag', delivery: 'moped' };
 
   ngOnInit() {
@@ -750,6 +795,29 @@ export class OrdersComponent implements OnInit, OnDestroy {
         this.load(); this.loadStats();
       },
       error: (err: any) => { this.savingAdvance = false; this.messages.add({ severity: 'error', summary: 'Error', detail: err?.error?.message || 'No se pudo registrar el cobro anticipado.' }); }
+    });
+  }
+
+  canCancel(order: OrderRow): boolean {
+    return order.status !== 'paid' && order.status !== 'cancelled' && Number(order.amount_paid) <= 0;
+  }
+
+  openCancel() {
+    if (!this.selected) return;
+    this.cancelReason = '';
+    this.cancelOpen = true;
+  }
+
+  confirmCancel() {
+    if (!this.selected || !this.cancelReason.trim() || this.cancelling) return;
+    this.cancelling = true;
+    this.api.post<OrderRow>(`table-orders/${this.selected.id}/cancel`, { reason: this.cancelReason.trim() }).subscribe({
+      next: () => {
+        this.cancelling = false; this.cancelOpen = false; this.detailOpen = false;
+        this.messages.add({ severity: 'success', summary: 'Orden cancelada', detail: `La orden #${this.orderCode(this.selected!.id)} fue cancelada.` });
+        this.load(); this.loadStats();
+      },
+      error: (err: any) => { this.cancelling = false; this.messages.add({ severity: 'error', summary: 'Error', detail: err?.error?.message || 'No se pudo cancelar la orden.' }); }
     });
   }
 

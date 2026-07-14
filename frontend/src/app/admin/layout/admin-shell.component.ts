@@ -119,6 +119,7 @@ export class AdminShellComponent {
     { path: '/admin/logs', icon: 'history', label: 'Registros' },
     { path: '/admin/staff', icon: 'group', label: 'Staff', permission: 'staff.manage' },
     { path: '/admin/staff-roles', icon: 'shield', label: 'Roles Staff', permission: 'staff.manage' },
+    { path: '/admin/security', icon: 'gpp_bad', label: 'Seguridad', permission: 'security.manage' },
   ];
 
   constructor() {

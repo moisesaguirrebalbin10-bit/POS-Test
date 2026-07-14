@@ -32,11 +32,15 @@ require __DIR__ . '/channels.php';
 require __DIR__ . '/admin.php';
 Broadcast::routes(['middleware' => ['auth:sanctum', 'tenant']]);
 
-Route::post('/login', [AuthController::class, 'login']);
-Route::post('/register-company', [RegisterController::class, 'store']);
-Route::post('/license/check', [LicenseController::class, 'check'])->middleware('throttle:30,1');
+// El 3er parametro de "throttle" (prefijo) es obligatorio para que cada grupo
+// tenga su propio contador: sin el, TODAS las rutas con throttle:X,Y comparten
+// una sola cuenta por IP (la firma default de Laravel es solo dominio+IP, sin
+// la ruta), y agotar el limite de una tira abajo a todas las demas.
+Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:6,1,login');
+Route::post('/register-company', [RegisterController::class, 'store'])->middleware('throttle:5,1,register');
+Route::post('/license/check', [LicenseController::class, 'check'])->middleware('throttle:30,1,license');
 
-Route::middleware(['auth:sanctum', 'tenant'])->group(function () {
+Route::middleware(['auth:sanctum', 'tenant', 'throttle:120,1,api'])->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me', [AuthController::class, 'me']);
     Route::get('/branding', [CompanySettingController::class, 'branding']);
@@ -121,6 +125,7 @@ Route::middleware(['auth:sanctum', 'tenant'])->group(function () {
         Route::post('/table-orders/{tableOrder}/charge', [RestaurantTableOrderController::class, 'charge']);
         Route::post('/table-orders/{tableOrder}/rounds', [RestaurantTableOrderController::class, 'addRound']);
         Route::post('/table-orders/{tableOrder}/advance-payment', [RestaurantTableOrderController::class, 'advancePayment']);
+        Route::post('/table-orders/{tableOrder}/cancel', [RestaurantTableOrderController::class, 'cancel']);
         Route::get('/table-orders/{tableOrder}/comanda-pdf', [RestaurantTableOrderController::class, 'comandaPdf']);
         Route::get('/table-orders/{tableOrder}/precuenta-pdf', [RestaurantTableOrderController::class, 'precuentaPdf']);
 

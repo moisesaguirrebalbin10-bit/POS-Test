@@ -27,7 +27,7 @@ class RestaurantTableOrderController extends Controller
     {
         $statuses = $request->status ? explode(',', $request->status) : null;
 
-        return RestaurantTableOrder::with(['table:id,name,capacity,zone', 'rounds.items', 'creator:id,name'])
+        return RestaurantTableOrder::with(['table:id,name,capacity,zone', 'rounds.items', 'creator:id,name', 'canceller:id,name'])
             ->when($statuses, fn ($q, $v) => $q->whereIn('status', $v))
             ->when($request->type, fn ($q, $v) => $q->where('type', $v))
             ->when($request->created_by, fn ($q, $v) => $q->where('created_by', $v))
@@ -302,6 +302,36 @@ class RestaurantTableOrderController extends Controller
         return response()->json($sale, 201);
     }
 
+    public function cancel(Request $request, RestaurantTableOrder $tableOrder)
+    {
+        abort_if($tableOrder->status === 'paid', 422, 'No se puede cancelar una orden que ya fue cobrada.');
+        abort_if($tableOrder->status === 'cancelled', 422, 'Esta orden ya esta cancelada.');
+        abort_if((float) $tableOrder->amount_paid > 0, 422, 'Esta orden ya tiene un cobro anticipado registrado; no se puede cancelar directamente.');
+
+        $data = $request->validate([
+            'reason' => ['required', 'string', 'max:255'],
+        ]);
+
+        $tableOrder->load('table');
+
+        $tableOrder->update([
+            'status' => 'cancelled',
+            'cancel_reason' => $data['reason'],
+            'cancelled_at' => now(),
+            'cancelled_by' => $request->user()->id,
+            'closed_at' => now(),
+        ]);
+
+        if ($tableOrder->table) {
+            $tableOrder->table->update(['status' => 'free']);
+            Broadcaster::send(fn () => broadcast(new TableFreed($tableOrder->table))->toOthers());
+        }
+
+        ActivityLogger::log($request->user(), 'orders', 'cancel', 'Cancelo la orden #' . $tableOrder->id . ($tableOrder->table ? " (mesa {$tableOrder->table->name})" : '') . ". Motivo: {$data['reason']}");
+
+        return $this->presentOrder($tableOrder->fresh()->load('rounds.items', 'table', 'creator', 'canceller'));
+    }
+
     public function advancePayment(Request $request, RestaurantTableOrder $tableOrder)
     {
         abort_if($tableOrder->status === 'paid', 422, 'Esta orden ya fue cobrada.');
@@ -419,6 +449,9 @@ class RestaurantTableOrderController extends Controller
             'creator' => $order->creator ? ['id' => $order->creator->id, 'name' => $order->creator->name] : null,
             'opened_at' => $order->opened_at,
             'closed_at' => $order->closed_at,
+            'cancel_reason' => $order->cancel_reason,
+            'cancelled_at' => $order->cancelled_at,
+            'canceller' => $order->canceller ? ['id' => $order->canceller->id, 'name' => $order->canceller->name] : null,
             'rounds' => $order->rounds->map(fn ($round) => [
                 'id' => $round->id,
                 'sent_at' => $round->sent_at,

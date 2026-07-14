@@ -29,16 +29,32 @@ const MIME_TYPES = {
 let backendProcess;
 let frontendServer;
 
-function ensureStorageDirs(backendDir) {
+function ensureStorageDirs(storageDir) {
   const dirs = [
-    'storage/framework/cache/data',
-    'storage/framework/sessions',
-    'storage/framework/views',
-    'storage/logs',
+    'framework/cache/data',
+    'framework/sessions',
+    'framework/views',
+    'logs',
   ];
   for (const dir of dirs) {
-    fs.mkdirSync(path.join(backendDir, dir), { recursive: true });
+    fs.mkdirSync(path.join(storageDir, dir), { recursive: true });
   }
+}
+
+// La carpeta de instalacion puede quedar en una ruta protegida (ej. Program Files)
+// donde un usuario sin privilegios de administrador no puede escribir. La base de
+// datos SQLite y el storage de Laravel (logs, cache, sesiones) no pueden vivir ahi
+// dentro: se copian/crean en el perfil del usuario, que siempre es escribible sin
+// importar donde se haya instalado el programa.
+function ensureDatabaseFile(backendDir, dataDir) {
+  const dbPath = path.join(dataDir, 'database.sqlite');
+  if (!fs.existsSync(dbPath)) {
+    fs.mkdirSync(dataDir, { recursive: true });
+    const seedDb = path.join(backendDir, 'database', 'database.sqlite');
+    if (fs.existsSync(seedDb)) fs.copyFileSync(seedDb, dbPath);
+    else fs.closeSync(fs.openSync(dbPath, 'w'));
+  }
+  return dbPath;
 }
 
 function waitForBackend(url, timeout = 20000) {
@@ -58,8 +74,19 @@ function startBackend() {
   const env = { ...process.env };
   delete env.ELECTRON_RUN_AS_NODE;
   const backendDir = app.isPackaged ? path.join(process.resourcesPath, 'backend') : path.join(__dirname, '..', '..', 'backend');
-  ensureStorageDirs(backendDir);
+
+  if (app.isPackaged) {
+    const dataDir = path.join(app.getPath('userData'), 'data');
+    const storageDir = path.join(dataDir, 'storage');
+    ensureStorageDirs(storageDir);
+    env.LARAVEL_STORAGE_PATH = storageDir;
+    env.DB_DATABASE = ensureDatabaseFile(backendDir, dataDir);
+  } else {
+    ensureStorageDirs(path.join(backendDir, 'storage'));
+  }
+
   backendProcess = spawn('php', ['artisan', 'serve', '--host=127.0.0.1', '--port=8000'], { cwd: backendDir, env, windowsHide: true, stdio: 'ignore' });
+  backendProcess.on('error', error => logCrash(error));
 }
 
 function printerConfigPath() {
@@ -118,7 +145,8 @@ async function createWindow() {
     height: 820,
     minWidth: 1024,
     minHeight: 700,
-    title: 'OptiUso',
+    title: 'OptiUso POS',
+    icon: path.join(__dirname, '..', 'icon.ico'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -175,6 +203,10 @@ function logCrash(error) {
     fs.mkdirSync(app.getPath('userData'), { recursive: true });
     fs.appendFileSync(logPath, `[${new Date().toISOString()}] ${error?.stack || error}\n`);
   } catch { /* ignore logging failures */ }
+}
+
+if (process.platform === 'win32') {
+  app.setAppUserModelId('com.optiuso.desktop');
 }
 
 app.whenReady().then(createWindow).catch(error => {

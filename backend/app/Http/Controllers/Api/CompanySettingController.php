@@ -57,6 +57,7 @@ class CompanySettingController extends Controller
         $data = $request->validate([
             'name' => ['required'], 'ruc' => ['nullable'], 'phone' => ['nullable'],
             'address' => ['nullable'], 'slogan' => ['nullable'], 'logo_path' => ['nullable'],
+            'voucher_show_logo' => ['boolean'], 'voucher_logo_size' => ['in:small,medium,large'],
             'igv_percent' => ['required', 'numeric', 'min:0'], 'tip_enabled' => ['boolean'],
             'default_tip' => ['numeric', 'min:0'], 'voucher_series' => ['required'],
             'voucher_start_number' => ['required', 'integer', 'min:1'], 'ticket_width' => ['in:58,80'],

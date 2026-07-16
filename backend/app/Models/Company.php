@@ -11,6 +11,7 @@ class Company extends Model
 {
     protected $fillable = [
         'name', 'slug', 'license_key', 'ruc', 'phone', 'address', 'slogan', 'logo_path',
+        'voucher_show_logo', 'voucher_logo_size',
         'igv_percent', 'tip_enabled', 'default_tip', 'voucher_series', 'voucher_start_number',
         'ticket_width', 'owner_user_id', 'status', 'business_type', 'business_type_selected_at', 'trial_ends_at', 'plan_id',
     ];
@@ -18,6 +19,7 @@ class Company extends Model
     protected $casts = [
         'igv_percent' => 'decimal:2',
         'tip_enabled' => 'boolean',
+        'voucher_show_logo' => 'boolean',
         'default_tip' => 'decimal:2',
         'trial_ends_at' => 'datetime',
         'business_type_selected_at' => 'datetime',

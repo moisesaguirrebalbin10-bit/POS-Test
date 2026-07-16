@@ -7,14 +7,21 @@
   body { font-family: "DejaVu Sans Mono", monospace; font-size: 8.5pt; line-height: 1.35; padding: 3mm; color: #000; }
   .center { text-align: center; }
   .bold { font-weight: bold; }
-  .copy-tag { font-weight: bold; margin-bottom: 2mm; }
-  .voucher-number { font-weight: bold; margin-bottom: 2mm; }
+  .muted { color: #333; font-size: 7.8pt; }
   .line { border-top: 1px dashed #000; margin: 2mm 0; }
   table.row { width: 100%; border-collapse: collapse; margin: 0; }
   table.row td { padding: 0; vertical-align: top; }
   table.row td.right { text-align: right; }
-  .header-block { margin-bottom: 2mm; }
   .header-block div { overflow-wrap: break-word; }
+  .header-block .company-name { font-weight: bold; font-size: 10.5pt; margin-bottom: 0.5mm; }
+  .voucher-logo { display: block; margin: 0 auto 1mm; height: auto; }
+  .voucher-logo-small { width: 14mm; }
+  .voucher-logo-medium { width: 20mm; }
+  .voucher-logo-large { width: 28mm; }
+  .doc-title-block { margin-bottom: 2mm; }
+  .doc-title { font-weight: bold; font-size: 9.5pt; }
+  .doc-title-internal { display: inline-block; border: 1px dashed #000; padding: 0.5mm 2mm; }
+  .voucher-number { font-weight: bold; margin-top: 0.5mm; }
   .fields-block table.row td:first-child { width: 30%; }
   table.items { width: 100%; border-collapse: collapse; table-layout: fixed; }
   table.items td { padding: 0; vertical-align: top; }
@@ -28,16 +35,22 @@
 </style>
 </head>
 <body>
-  <div class="center copy-tag">{{ $copyTag }}</div>
-
   <div class="center header-block">
-    <div class="bold">{{ $company->name }}</div>
-    <div>RUC: {{ $company->ruc }}</div>
-    @if ($company->address) <div>{{ $company->address }}</div> @endif
-    @if ($company->phone) <div>Cel: {{ $company->phone }}</div> @endif
+    @if ($company->voucher_show_logo && $company->logo_path)
+      <img class="voucher-logo voucher-logo-{{ $company->voucher_logo_size ?? 'medium' }}" src="{{ public_path($company->logo_path) }}">
+    @endif
+    <div class="company-name">{{ $company->name }}</div>
+    <div class="bold">RUC: {{ $company->ruc }}</div>
+    @if ($company->address) <div class="muted">{{ $company->address }}</div> @endif
+    @if ($company->phone) <div class="muted">Cel: {{ $company->phone }}</div> @endif
   </div>
 
-  <div class="center voucher-number">{{ $sale->voucher_number }}</div>
+  <div class="line"></div>
+
+  <div class="center doc-title-block">
+    <div class="doc-title {{ $copy === 'local' ? 'doc-title-internal' : '' }}">{{ $copyTag }}</div>
+    <div class="voucher-number">Nro. {{ $sale->voucher_number }}</div>
+  </div>
 
   <div class="fields-block">
     <table class="row"><tr><td>F. Emision:</td><td class="right">{{ $sale->created_at->format('d/m/Y H:i:s') }}</td></tr></table>

@@ -1183,6 +1183,40 @@ html.app-dark .company-note { background: var(--surface-2); color: #93c5fd; }
 .image-dropzone small { color: var(--muted); }
 .image-field code { display: block; padding: 8px 10px; border-radius: 8px; background: #f3f6f6; color: #344054; overflow-wrap: anywhere; }
 
+.voucher-preview-btn { margin-top: 14px; }
+.voucher-preview-grid { display: grid; grid-template-columns: 260px 1fr; gap: 20px; }
+@media (max-width: 700px) { .voucher-preview-grid { grid-template-columns: 1fr; } }
+.voucher-preview-controls { display: flex; flex-direction: column; gap: 14px; }
+.voucher-preview-controls .image-dropzone { min-height: 130px; }
+.voucher-preview-paper-wrap { display: grid; place-items: start center; padding: 16px; border-radius: 10px; background: #eef1f4; }
+html.app-dark .voucher-preview-paper-wrap { background: var(--surface-2); }
+.voucher-ticket-preview {
+  width: 220px;
+  padding: 10px 12px 14px;
+  background: #fff;
+  color: #111;
+  font-family: "Courier New", Courier, monospace;
+  font-size: 11px;
+  line-height: 1.4;
+  box-shadow: 0 10px 26px rgba(15, 23, 42, .18);
+  border-radius: 2px;
+}
+.voucher-ticket-preview.wide { width: 300px; }
+.voucher-ticket-preview .vtp-company-name { text-align: center; font-weight: 700; font-size: 13px; margin-bottom: 2px; }
+.voucher-ticket-preview .vtp-bold { text-align: center; font-weight: 700; }
+.voucher-ticket-preview .vtp-muted { text-align: center; font-size: 10px; color: #444; }
+.voucher-ticket-preview .vtp-doc-title { text-align: center; font-weight: 700; font-size: 12px; }
+.voucher-ticket-preview .vtp-voucher-number { text-align: center; font-weight: 700; margin-top: 1px; }
+.voucher-ticket-preview > div:not(.vtp-row):not(.vtp-line) { overflow-wrap: break-word; }
+.voucher-ticket-preview .vtp-line { border-top: 1px dashed #000; margin: 6px 0; }
+.voucher-ticket-preview .vtp-row { display: flex; justify-content: space-between; gap: 8px; }
+.voucher-ticket-preview .vtp-total { font-weight: 700; margin-top: 4px; }
+.voucher-ticket-preview .vtp-slogan { margin-top: 6px; font-style: italic; text-align: center; }
+.voucher-ticket-preview .vtp-logo { display: block; margin: 0 auto 4px; height: auto; }
+.voucher-ticket-preview .vtp-logo-small { width: 36px; }
+.voucher-ticket-preview .vtp-logo-medium { width: 52px; }
+.voucher-ticket-preview .vtp-logo-large { width: 72px; }
+
 
 .theme-switch {
   position: relative;

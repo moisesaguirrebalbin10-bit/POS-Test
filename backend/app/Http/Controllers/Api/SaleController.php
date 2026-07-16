@@ -84,7 +84,7 @@ class SaleController extends Controller
 
         $sale->load('items', 'cashier');
         $company = app('currentCompany');
-        $copyTag = $copy === 'local' ? '*** COPIA - USO INTERNO (COMANDA) ***' : '*** NOTA VENTA ***';
+        $copyTag = $copy === 'local' ? 'COPIA - USO INTERNO (COMANDA)' : 'NOTA DE VENTA';
         $paymentLabels = ['cash' => 'EFECTIVO', 'yape' => 'YAPE', 'plin' => 'PLIN', 'card' => 'TARJETA', 'transfer' => 'TRANSFERENCIA', 'mixed' => 'MIXTO'];
 
         $widthMm = $company->ticket_width === '58' ? 58 : 80;
@@ -93,7 +93,8 @@ class SaleController extends Controller
         // para evitar que el ticket se corte a una segunda pagina. Calibrado empiricamente
         // contando paginas reales con dompdf para distintas alturas de pagina.
         $lineCount = $sale->items->count() + ($sale->tip > 0 ? 1 : 0) + ($sale->discount_amount > 0 ? 1 : 0) + ($copy === 'customer' && $company->slogan ? 1 : 0) + ($company->address ? 1 : 0);
-        $heightMm = max(90, 108 + $lineCount * 5);
+        $logoExtraMm = ($company->voucher_show_logo && $company->logo_path) ? 10 : 0;
+        $heightMm = max(90, 112 + $lineCount * 5 + $logoExtraMm);
         $mmToPt = 2.83465;
 
         $pdf = Pdf::loadView('voucher-pdf', compact('sale', 'company', 'copy', 'copyTag', 'paymentLabels'));

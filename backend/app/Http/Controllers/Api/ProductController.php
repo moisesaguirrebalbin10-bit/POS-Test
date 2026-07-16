@@ -3,12 +3,16 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Imports\ProductsImport;
+use App\Imports\ProductsTemplateExport;
 use App\Models\Category;
 use App\Models\Product;
 use App\Services\ActivityLogger;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Maatwebsite\Excel\Facades\Excel;
 
 class ProductController extends Controller
 {
@@ -97,6 +101,84 @@ class ProductController extends Controller
         return Product::with('category', 'warehouse')
             ->where(fn ($q) => $q->whereNull('type')->orWhere('type', '!=', 'plato'))
             ->whereColumn('stock', '<=', 'min_stock')->get();
+    }
+
+    public function importTemplate(Request $request)
+    {
+        ActivityLogger::log($request->user(), 'products', 'import-template', 'Descargo la plantilla de carga masiva de carta.');
+
+        return response(Excel::raw(new ProductsTemplateExport, \Maatwebsite\Excel\Excel::XLSX))
+            ->header('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            ->header('Content-Disposition', 'attachment; filename="plantilla-carta.xlsx"');
+    }
+
+    public function importPreview(Request $request)
+    {
+        $data = $request->validate(['file' => ['required', 'file', 'mimes:xlsx,xls', 'max:2048']]);
+
+        $import = new ProductsImport;
+        Excel::import($import, $data['file']);
+
+        return response()->json(['rows' => $import->parsedRows]);
+    }
+
+    public function importConfirm(Request $request)
+    {
+        $data = $request->validate([
+            'rows' => ['required', 'array', 'min:1'],
+            'rows.*.name' => ['required', 'string'],
+            'rows.*.category_name' => ['nullable', 'string'],
+            'rows.*.area_preparacion' => ['nullable', 'in:cocina,bar'],
+            'rows.*.sale_price' => ['required', 'numeric', 'min:0'],
+            'rows.*.cost' => ['required', 'numeric', 'min:0'],
+            'rows.*.active' => ['boolean'],
+        ]);
+
+        $companyId = app('currentCompanyId');
+        $created = 0;
+        $updated = 0;
+        $skipped = 0;
+
+        DB::transaction(function () use ($data, $companyId, &$created, &$updated, &$skipped) {
+            foreach ($data['rows'] as $row) {
+                $name = trim($row['name'] ?? '');
+                $categoryName = trim($row['category_name'] ?? '');
+                if ($name === '' || $categoryName === '') {
+                    $skipped++;
+                    continue;
+                }
+
+                $categoryId = Category::firstOrCreate(
+                    ['company_id' => $companyId, 'name' => $categoryName],
+                    ['active' => true]
+                )->id;
+
+                $payload = [
+                    'name' => $name,
+                    'category_id' => $categoryId,
+                    'area_preparacion' => in_array($row['area_preparacion'] ?? null, ['cocina', 'bar'], true) ? $row['area_preparacion'] : 'cocina',
+                    'sale_price' => (float) $row['sale_price'],
+                    'cost' => (float) $row['cost'],
+                    'active' => (bool) ($row['active'] ?? true),
+                    'type' => 'plato',
+                ];
+
+                $existing = Product::where('type', 'plato')->whereRaw('LOWER(name) = ?', [mb_strtolower($name)])->first();
+
+                if ($existing) {
+                    $existing->update($payload);
+                    $updated++;
+                } else {
+                    $payload['sku'] = Str::upper(Str::slug($name, '')) . '-' . now()->format('YmdHis') . Str::upper(Str::random(3));
+                    Product::create($payload);
+                    $created++;
+                }
+            }
+        });
+
+        ActivityLogger::log($request->user(), 'products', 'import', "Cargo la carta completa ({$created} creados, {$updated} actualizados, {$skipped} omitidos).");
+
+        return response()->json(['created' => $created, 'updated' => $updated, 'skipped' => $skipped]);
     }
 
     private function validated(Request $request, ?int $id = null): array

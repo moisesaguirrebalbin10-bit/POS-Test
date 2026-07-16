@@ -83,6 +83,9 @@ Route::middleware(['auth:sanctum', 'tenant', 'throttle:120,1,api'])->group(funct
     Route::apiResource('categories', CategoryController::class)->only(['destroy'])->middleware('permission:products.delete');
 
     Route::post('/products/upload-image', [ProductController::class, 'uploadImage'])->middleware('permission:products.create,products.update');
+    Route::get('/products/import-template', [ProductController::class, 'importTemplate'])->middleware('permission:products.create');
+    Route::post('/products/import-preview', [ProductController::class, 'importPreview'])->middleware('permission:products.create');
+    Route::post('/products/import-confirm', [ProductController::class, 'importConfirm'])->middleware('permission:products.create');
     Route::apiResource('products', ProductController::class)->only(['index', 'show'])->middleware('permission:products.view');
     Route::apiResource('products', ProductController::class)->only(['store'])->middleware('permission:products.create');
     Route::apiResource('products', ProductController::class)->only(['update'])->middleware('permission:products.update');

@@ -217,51 +217,152 @@ type AvailableProduct = { id: number; name: string; sale_price: number | string;
       <div class="carta-tabs small">
         <button type="button" class="carta-tab" [class.active]="recipeKind === 'receta'" (click)="setRecipeKind('receta')">Recetas</button>
         <button type="button" class="carta-tab" [class.active]="recipeKind === 'extra'" (click)="setRecipeKind('extra')">Extras</button>
+        <button type="button" class="carta-tab" [class.active]="recipeKind === 'calculadora'" (click)="setRecipeKind('calculadora')"><mat-icon>calculate</mat-icon>Calculadora Food Cost</button>
       </div>
 
-      <div class="panel-subhead">
-        <div>
-          <h2>Recetas y Food Cost</h2>
-          <p>Analisis de costos y margenes por receta</p>
+      @if (recipeKind !== 'calculadora') {
+        <div class="panel-subhead">
+          <div>
+            <h2>Recetas y Food Cost</h2>
+            <p>Analisis de costos y margenes por receta</p>
+          </div>
+          <div class="header-actions">
+            @if (recipeStats) {
+              <span class="count-pill">{{recipeStats.with_recipe}}/{{recipeStats.total_dishes}} con receta ({{recipeStats.coverage_percent ?? 0}}%)</span>
+            }
+            <button mat-flat-button class="primary-action" (click)="openNewRecipeModal()"><mat-icon>add</mat-icon>Nueva Receta</button>
+          </div>
         </div>
-        <div class="header-actions">
-          @if (recipeStats) {
-            <span class="count-pill">{{recipeStats.with_recipe}}/{{recipeStats.total_dishes}} con receta ({{recipeStats.coverage_percent ?? 0}}%)</span>
-          }
-          <button mat-flat-button class="primary-action" (click)="openNewRecipeModal()"><mat-icon>add</mat-icon>Nueva Receta</button>
-        </div>
-      </div>
 
-      <div class="search-pill"><mat-icon>search</mat-icon><input type="text" placeholder="Buscar recetas por nombre o categoria..." [(ngModel)]="recipeSearch" (ngModelChange)="onRecipeFiltersChange()"></div>
+        <div class="search-pill"><mat-icon>search</mat-icon><input type="text" placeholder="Buscar recetas por nombre o categoria..." [(ngModel)]="recipeSearch" (ngModelChange)="onRecipeFiltersChange()"></div>
 
-      @if (recipesLoading) {
-        <div class="loading-state"><mat-icon>hourglass_empty</mat-icon><p>Cargando recetas...</p></div>
-      } @else if (!recipes.length) {
-        <div class="empty-state"><mat-icon>menu_book</mat-icon><p>No hay recetas registradas.</p></div>
-      } @else {
-        <div class="recipe-grid">
-          @for (r of recipes; track r.id) {
-            <article class="recipe-card" (click)="openEditRecipeModal(r)">
-              <div class="recipe-card-tags">
-                @if (r.product.category) { <span class="category-pill">{{r.product.category}}</span> }
-                <span class="recipe-general-pill">{{r.is_general ? 'Receta General' : 'Variante'}}</span>
-              </div>
-              <h3>{{r.product.name}}</h3>
-              <div class="recipe-card-metrics">
-                <div><small>PRECIO VENTA</small><b>{{number(r.product.sale_price) | currency:'PEN':'S/ '}}</b></div>
-                <div><small>MARGEN</small><b class="margin-value">{{r.margin | currency:'PEN':'S/ '}}</b></div>
-              </div>
-              <div class="recipe-card-foodcost">
-                <div class="recipe-card-foodcost-head">
-                  <small>FOOD COST</small>
-                  @if (r.food_cost_percent !== null) { <span class="fc-tag" [class]="foodCostTier(r.food_cost_percent).cls">{{foodCostTier(r.food_cost_percent).label}}</span> }
-                  <span class="recipe-cost-total">Costo Receta: {{r.cost_total | currency:'PEN':'S/ '}}</span>
+        @if (recipesLoading) {
+          <div class="loading-state"><mat-icon>hourglass_empty</mat-icon><p>Cargando recetas...</p></div>
+        } @else if (!recipes.length) {
+          <div class="empty-state"><mat-icon>menu_book</mat-icon><p>No hay recetas registradas.</p></div>
+        } @else {
+          <div class="recipe-grid">
+            @for (r of recipes; track r.id) {
+              <article class="recipe-card" (click)="openEditRecipeModal(r)">
+                <div class="recipe-card-tags">
+                  @if (r.product.category) { <span class="category-pill">{{r.product.category}}</span> }
+                  <span class="recipe-general-pill">{{r.is_general ? 'Receta General' : 'Variante'}}</span>
                 </div>
-                <div class="recipe-fc-value">{{r.food_cost_percent === null ? 'N/A' : r.food_cost_percent + '%'}}</div>
-                <div class="stock-bar"><span class="stock-bar-fill" [class]="'fill-' + foodCostTier(r.food_cost_percent).cls" [style.width.%]="r.food_cost_percent || 0"></span></div>
+                <h3>{{r.product.name}}</h3>
+                <div class="recipe-card-metrics">
+                  <div><small>PRECIO VENTA</small><b>{{number(r.product.sale_price) | currency:'PEN':'S/ '}}</b></div>
+                  <div><small>MARGEN</small><b class="margin-value">{{r.margin | currency:'PEN':'S/ '}}</b></div>
+                </div>
+                <div class="recipe-card-foodcost">
+                  <div class="recipe-card-foodcost-head">
+                    <small>FOOD COST</small>
+                    @if (r.food_cost_percent !== null) { <span class="fc-tag" [class]="foodCostTier(r.food_cost_percent).cls">{{foodCostTier(r.food_cost_percent).label}}</span> }
+                    <span class="recipe-cost-total">Costo Receta: {{r.cost_total | currency:'PEN':'S/ '}}</span>
+                  </div>
+                  <div class="recipe-fc-value">{{r.food_cost_percent === null ? 'N/A' : r.food_cost_percent + '%'}}</div>
+                  <div class="stock-bar"><span class="stock-bar-fill" [class]="'fill-' + foodCostTier(r.food_cost_percent).cls" [style.width.%]="r.food_cost_percent || 0"></span></div>
+                </div>
+              </article>
+            }
+          </div>
+        }
+      } @else {
+        <div class="fc-calc-tabs">
+          <button type="button" class="fc-calc-tab" [class.active]="foodCostView === 'plato'" (click)="foodCostView = 'plato'">Food Cost por Plato</button>
+          <button type="button" class="fc-calc-tab" [class.active]="foodCostView === 'general'" (click)="foodCostView = 'general'">Food Cost General</button>
+        </div>
+
+        @if (foodCostView === 'plato') {
+          <div class="fc-calc-panel">
+            <label class="fc-label">Nombre del plato</label>
+            <input type="text" class="fc-input" placeholder="Ej: Lomo saltado" [(ngModel)]="fcPlatoForm.name">
+
+            <div class="fc-insumos-head">
+              <span>Insumos</span>
+              <button type="button" class="fc-add-link" (click)="addFcInsumo()"><mat-icon>add</mat-icon>Agregar insumo</button>
+            </div>
+            <div class="fc-insumos-table">
+              <div class="fc-insumos-row fc-insumos-row-head">
+                <span>Insumo</span><span>Cantidad</span><span>Unidad</span><span>Costo (S/)</span><span></span>
               </div>
-            </article>
+              @for (ins of fcPlatoForm.insumos; track $index) {
+                <div class="fc-insumos-row">
+                  <input type="text" class="fc-input" placeholder="Nombre del insumo" [(ngModel)]="ins.name">
+                  <input type="number" min="0" class="fc-input" placeholder="Cant." [(ngModel)]="ins.qty">
+                  <select class="fc-input" [(ngModel)]="ins.unit">
+                    @for (u of unitOptions; track u) { <option [value]="u">{{u}}</option> }
+                  </select>
+                  <input type="number" min="0" class="fc-input" placeholder="S/" [(ngModel)]="ins.cost">
+                  <button type="button" class="fc-row-remove" [disabled]="fcPlatoForm.insumos.length <= 1" (click)="removeFcInsumo($index)"><mat-icon>delete</mat-icon></button>
+                </div>
+              }
+            </div>
+
+            <label class="fc-label">Precio de venta del plato (S/)</label>
+            <input type="number" min="0" class="fc-input" placeholder="Ej: 35.00" [(ngModel)]="fcPlatoForm.salePrice">
+
+            <div class="fc-calc-actions">
+              <button type="button" class="fc-calc-btn" (click)="calcularFoodCostPlato()">Calcular Food Cost</button>
+              <button type="button" class="fc-clear-btn" (click)="limpiarFoodCostPlato()">Limpiar</button>
+            </div>
+
+            @if (fcPlatoResult) {
+              <div class="fc-result">
+                <div class="fc-result-row"><span>Costo total de insumos</span><b>{{fcPlatoResult.costTotal | currency:'PEN':'S/ '}}</b></div>
+                <div class="fc-result-row"><span>Food Cost</span><b class="fc-tag" [class]="foodCostTier(fcPlatoResult.percent).cls">{{fcPlatoResult.percent}}% - {{foodCostTier(fcPlatoResult.percent).label}}</b></div>
+                <div class="fc-result-row"><span>Margen</span><b>{{fcPlatoResult.margin | currency:'PEN':'S/ '}}</b></div>
+              </div>
+            }
+          </div>
+        } @else {
+          <div class="fc-calc-panel">
+            <label class="fc-label">Costo total de insumos del mes (S/)</label>
+            <input type="number" min="0" class="fc-input" placeholder="Ej: 15000.00" [(ngModel)]="fcGeneralForm.totalCost">
+            <label class="fc-label">Ventas totales del mes (S/)</label>
+            <input type="number" min="0" class="fc-input" placeholder="Ej: 50000.00" [(ngModel)]="fcGeneralForm.totalSales">
+
+            <div class="fc-calc-actions">
+              <button type="button" class="fc-calc-btn" (click)="calcularFoodCostGeneral()">Calcular Food Cost</button>
+              <button type="button" class="fc-clear-btn" (click)="limpiarFoodCostGeneral()">Limpiar</button>
+            </div>
+
+            @if (fcGeneralResult) {
+              <div class="fc-result">
+                <div class="fc-result-row"><span>Food Cost General</span><b class="fc-tag" [class]="foodCostTier(fcGeneralResult.percent).cls">{{fcGeneralResult.percent}}% - {{foodCostTier(fcGeneralResult.percent).label}}</b></div>
+              </div>
+            }
+          </div>
+        }
+
+        <div class="fc-benchmark-card">
+          <div class="fc-benchmark-row fc-benchmark-head"><span>Tipo de negocio</span><span>Food Cost ideal</span><span>Estado</span></div>
+          @for (b of foodCostBenchmarks; track b.tipo) {
+            <div class="fc-benchmark-row"><span>{{b.tipo}}</span><span>{{b.rango}}</span><span class="fc-dot" [class]="b.dot"></span></div>
           }
+        </div>
+
+        <div class="fc-tips-card">
+          <h3>Tips para reducir tu food cost</h3>
+          <ul class="fc-tips-list">
+            @for (t of foodCostTips; track t.title) {
+              <li><mat-icon>check</mat-icon><span><b>{{t.title}}</b> {{t.text}}</span></li>
+            }
+          </ul>
+        </div>
+
+        <div class="fc-explain-card">
+          <h3>Que es el Food Cost?</h3>
+          <p>El <b>food cost</b> (o costo de alimentos) es el porcentaje que representan los insumos de un plato sobre su precio de venta. Es uno de los indicadores mas importantes para medir la rentabilidad de un restaurante.</p>
+          <div class="fc-formula-box">
+            <small>Formula del Food Cost</small>
+            <div class="fc-formula">Food Cost % = (Costo de insumos / Precio de venta) x 100</div>
+          </div>
+          <p>Por ejemplo, si un plato de <b>lomo saltado</b> te cuesta S/ 10 en insumos y lo vendes a S/ 35, tu food cost es <b>28.6%</b> - dentro del rango ideal para restaurantes en Peru.</p>
+          <p>Mantener el food cost controlado te permite tener mejores margenes de ganancia, fijar precios competitivos y tomar decisiones informadas sobre tu carta.</p>
+          <div class="fc-cards-row">
+            <div class="fc-info-card"><small>ARTICULO</small><span>Que es el Food Cost y por que es clave para tu restaurante?</span></div>
+            <div class="fc-info-card"><small>GUIA</small><span>Como calcular el food cost ideal para tu restaurante</span></div>
+          </div>
         </div>
       }
     }
@@ -327,7 +428,12 @@ type AvailableProduct = { id: number; name: string; sale_price: number | string;
       <datalist id="ingredient-category-options">
         @for (c of ingredientCategories; track c.id) { <option [value]="c.name"></option> }
       </datalist>
-      <mat-form-field appearance="outline"><mat-label>Unidad (kg, L, und, paq, porc...)</mat-label><input matInput [(ngModel)]="ingredientForm.unit"></mat-form-field>
+      <mat-form-field appearance="outline">
+        <mat-label>Unidad</mat-label>
+        <mat-select [(ngModel)]="ingredientForm.unit">
+          @for (u of unitOptions; track u) { <mat-option [value]="u">{{u}}</mat-option> }
+        </mat-select>
+      </mat-form-field>
       <div class="form-row-2">
         <mat-form-field appearance="outline"><mat-label>Stock</mat-label><input matInput type="number" [(ngModel)]="ingredientForm.stock"></mat-form-field>
         <mat-form-field appearance="outline"><mat-label>Stock minimo</mat-label><input matInput type="number" min="0" [(ngModel)]="ingredientForm.min_stock"></mat-form-field>
@@ -480,6 +586,54 @@ type AvailableProduct = { id: number; name: string; sale_price: number | string;
     .danger-btn { color: #c22a2a !important; border-color: #f0b8b8 !important; }
     .advance-hint { margin: 0 0 12px; font-size: 13px; color: var(--muted); }
     .modal-actions { display: flex; justify-content: flex-end; gap: 10px; }
+
+    /* Calculadora Food Cost */
+    .fc-calc-tabs { display: flex; gap: 24px; border-bottom: 1px solid var(--soft-line); margin: 4px 0 16px; }
+    .fc-calc-tab { background: none; border: none; padding: 0 0 10px; font-size: 14px; font-weight: 600; color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; }
+    .fc-calc-tab.active { color: var(--primary-strong); border-bottom-color: var(--primary); }
+    .fc-calc-panel { border: 1px solid var(--soft-line); border-radius: 14px; background: var(--surface); padding: 20px; display: flex; flex-direction: column; gap: 6px; box-shadow: var(--shadow); margin-bottom: 16px; }
+    .fc-label { font-size: 13px; font-weight: 700; color: var(--ink); margin: 10px 0 4px; }
+    .fc-input { height: 40px; border: 1px solid var(--line); border-radius: 8px; padding: 0 12px; font-size: 13px; background: var(--surface); color: var(--ink); width: 100%; box-sizing: border-box; }
+    .fc-input:focus { outline: none; border-color: var(--primary); }
+    .fc-insumos-head { display: flex; align-items: center; justify-content: space-between; margin-top: 12px; }
+    .fc-insumos-head > span { font-size: 13px; font-weight: 700; color: var(--ink); }
+    .fc-add-link { display: inline-flex; align-items: center; gap: 2px; background: none; border: none; color: var(--primary-strong); font-size: 13px; font-weight: 700; cursor: pointer; padding: 0; }
+    .fc-add-link mat-icon { font-size: 18px; width: 18px; height: 18px; }
+    .fc-insumos-table { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+    .fc-insumos-row { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 32px; gap: 8px; align-items: center; }
+    .fc-insumos-row-head span { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+    .fc-row-remove { border: none; background: none; color: var(--muted); cursor: pointer; padding: 4px; display: grid; place-items: center; }
+    .fc-row-remove:disabled { opacity: .35; cursor: not-allowed; }
+    .fc-row-remove mat-icon { font-size: 18px; width: 18px; height: 18px; }
+    .fc-calc-actions { display: flex; gap: 10px; margin-top: 16px; }
+    .fc-calc-btn { flex: 1; height: 44px; border: none; border-radius: 8px; background: var(--primary); color: #fff; font-size: 14px; font-weight: 700; cursor: pointer; }
+    .fc-calc-btn:hover { background: var(--primary-strong); }
+    .fc-clear-btn { height: 44px; padding: 0 18px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink); font-size: 14px; font-weight: 700; cursor: pointer; }
+    .fc-result { margin-top: 16px; padding: 14px 16px; border-radius: 10px; background: var(--surface-2); display: flex; flex-direction: column; gap: 8px; }
+    .fc-result-row { display: flex; align-items: center; justify-content: space-between; font-size: 13px; }
+    .fc-benchmark-card { border: 1px solid var(--soft-line); border-radius: 14px; background: var(--surface); padding: 16px 20px; margin-bottom: 16px; }
+    .fc-benchmark-row { display: grid; grid-template-columns: 2fr 1fr 60px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--soft-line); font-size: 13px; }
+    .fc-benchmark-row:last-child { border-bottom: none; }
+    .fc-benchmark-head span { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+    .fc-dot { width: 10px; height: 10px; border-radius: 50%; }
+    .fc-dot.green { background: #16a34a; }
+    .fc-dot.yellow { background: #f59e0b; }
+    .fc-tips-card { border: 1px solid var(--soft-line); border-radius: 14px; background: var(--surface); padding: 16px 20px; margin-bottom: 16px; }
+    .fc-tips-card h3 { margin: 0 0 12px; font-size: 15px; }
+    .fc-tips-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+    .fc-tips-list li { display: flex; align-items: flex-start; gap: 8px; font-size: 13px; line-height: 1.5; }
+    .fc-tips-list mat-icon { font-size: 18px; width: 18px; height: 18px; color: #16a34a; flex: none; margin-top: 1px; }
+    .fc-explain-card { border: 1px solid var(--soft-line); border-radius: 14px; background: var(--surface); padding: 20px; }
+    .fc-explain-card h3 { margin: 0 0 12px; font-size: 17px; }
+    .fc-explain-card p { margin: 0 0 12px; font-size: 13px; line-height: 1.6; color: var(--ink); }
+    .fc-formula-box { background: var(--surface-2); border-radius: 10px; padding: 14px; text-align: center; margin: 0 0 12px; }
+    .fc-formula-box small { display: block; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin-bottom: 6px; }
+    .fc-formula { font-size: 15px; font-weight: 700; color: var(--ink); }
+    .fc-cards-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 8px; }
+    @media (max-width: 640px) { .fc-cards-row { grid-template-columns: 1fr; } .fc-insumos-row { grid-template-columns: 1fr; } }
+    .fc-info-card { border: 1px solid var(--soft-line); border-radius: 10px; padding: 12px 14px; display: flex; flex-direction: column; gap: 4px; }
+    .fc-info-card small { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; color: var(--primary-strong); }
+    .fc-info-card span { font-size: 13px; font-weight: 600; color: var(--ink); }
   `]
 })
 export class InventoryComponent implements OnInit {
@@ -500,6 +654,7 @@ export class InventoryComponent implements OnInit {
 
   ingredientModalOpen = false; editingIngredient: Ingredient | null = null; savingIngredient = false;
   ingredientForm = { name: '', sku: '', categoryName: '', unit: 'und', stock: 0, min_stock: 0, cost: 0, is_composite: false, active: true };
+  unitOptions = ['kg', 'g', 'lt', 'ml', 'und', 'paquete', 'atado', 'onza', 'cucharas'];
 
   // Articulos
   articulos: Articulo[] = [];
@@ -514,11 +669,34 @@ export class InventoryComponent implements OnInit {
   // Recetas
   recipes: RecipeRow[] = [];
   recipesLoading = false;
-  recipeKind: 'receta' | 'extra' = 'receta';
+  recipeKind: 'receta' | 'extra' | 'calculadora' = 'receta';
   recipeSearch = '';
   recipeStats: { total_dishes: number; with_recipe: number; coverage_percent: number | null } | null = null;
   availableProducts: AvailableProduct[] = [];
   allIngredients: Ingredient[] = [];
+
+  // Recetas - Calculadora Food Cost
+  foodCostView: 'plato' | 'general' = 'plato';
+  fcPlatoForm: { name: string; insumos: { name: string; qty: number | null; unit: string; cost: number | null }[]; salePrice: number | null } = {
+    name: '', insumos: [this.newFcInsumoRow(), this.newFcInsumoRow(), this.newFcInsumoRow()], salePrice: null
+  };
+  fcPlatoResult: { costTotal: number; percent: number; margin: number } | null = null;
+  fcGeneralForm: { totalCost: number | null; totalSales: number | null } = { totalCost: null, totalSales: null };
+  fcGeneralResult: { percent: number } | null = null;
+  foodCostBenchmarks = [
+    { tipo: 'Restaurante de menu', rango: '28% - 32%', dot: 'green' },
+    { tipo: 'Polleria', rango: '30% - 35%', dot: 'green' },
+    { tipo: 'Cevicheria', rango: '32% - 38%', dot: 'yellow' },
+    { tipo: 'Cafeteria', rango: '25% - 30%', dot: 'green' },
+    { tipo: 'Chifa', rango: '28% - 33%', dot: 'green' },
+  ];
+  foodCostTips = [
+    { title: 'Controla las porciones:', text: 'Estandariza recetas con pesos y medidas exactas para cada plato.' },
+    { title: 'Negocia con proveedores:', text: 'Compara precios y negocia descuentos por volumen regularmente.' },
+    { title: 'Reduce las mermas:', text: 'Lleva inventario diario y usa el metodo PEPS (primero en entrar, primero en salir).' },
+    { title: 'Revisa tu carta:', text: 'Elimina platos con bajo margen y potencia los mas rentables.' },
+    { title: 'Usa tecnologia:', text: 'Un sistema como OptiUso calcula tu food cost automaticamente con cada venta.' },
+  ];
 
   recipeModalOpen = false; editingRecipe: RecipeRow | null = null; savingRecipe = false;
   recipeForm: { product_id: number | null; kind: string; ingredients: { ingredient_id: number; quantity: number }[] } = { product_id: null, kind: 'receta', ingredients: [] };
@@ -759,7 +937,7 @@ export class InventoryComponent implements OnInit {
     });
   }
 
-  setRecipeKind(kind: 'receta' | 'extra') { this.recipeKind = kind; this.loadRecipes(); }
+  setRecipeKind(kind: 'receta' | 'extra' | 'calculadora') { this.recipeKind = kind; if (kind !== 'calculadora') this.loadRecipes(); }
   onRecipeFiltersChange() { this.loadRecipes(); }
 
   foodCostTier(percent: number | null): { cls: string; label: string } {
@@ -767,6 +945,33 @@ export class InventoryComponent implements OnInit {
     if (percent < 35) return { cls: 'optimo', label: 'Optimo' };
     if (percent <= 40) return { cls: 'aceptable', label: 'Aceptable' };
     return { cls: 'alto', label: 'Alto' };
+  }
+
+  // ---------- Calculadora Food Cost ----------
+  private newFcInsumoRow() { return { name: '', qty: null as number | null, unit: 'kg', cost: null as number | null }; }
+  addFcInsumo() { this.fcPlatoForm.insumos.push(this.newFcInsumoRow()); }
+  removeFcInsumo(i: number) { if (this.fcPlatoForm.insumos.length > 1) this.fcPlatoForm.insumos.splice(i, 1); }
+
+  calcularFoodCostPlato() {
+    const costTotal = this.fcPlatoForm.insumos.reduce((sum, ins) => sum + this.number(ins.cost), 0);
+    const salePrice = this.number(this.fcPlatoForm.salePrice);
+    const percent = salePrice > 0 ? Math.round((costTotal / salePrice) * 1000) / 10 : 0;
+    this.fcPlatoResult = { costTotal, percent, margin: salePrice - costTotal };
+  }
+  limpiarFoodCostPlato() {
+    this.fcPlatoForm = { name: '', insumos: [this.newFcInsumoRow(), this.newFcInsumoRow(), this.newFcInsumoRow()], salePrice: null };
+    this.fcPlatoResult = null;
+  }
+
+  calcularFoodCostGeneral() {
+    const cost = this.number(this.fcGeneralForm.totalCost);
+    const sales = this.number(this.fcGeneralForm.totalSales);
+    const percent = sales > 0 ? Math.round((cost / sales) * 1000) / 10 : 0;
+    this.fcGeneralResult = { percent };
+  }
+  limpiarFoodCostGeneral() {
+    this.fcGeneralForm = { totalCost: null, totalSales: null };
+    this.fcGeneralResult = null;
   }
 
   private loadIngredientsForRecipeForm() {

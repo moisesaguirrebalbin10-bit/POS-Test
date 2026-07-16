@@ -1217,6 +1217,25 @@ html.app-dark .voucher-preview-paper-wrap { background: var(--surface-2); }
 .voucher-ticket-preview .vtp-logo-medium { width: 52px; }
 .voucher-ticket-preview .vtp-logo-large { width: 72px; }
 
+/* Carga masiva de Carta */
+.import-steps { list-style: none; margin: 0 0 16px; padding: 0; display: flex; flex-direction: column; gap: 14px; }
+.import-steps li { display: flex; align-items: flex-start; gap: 12px; }
+.import-steps b { font-size: 13.5px; }
+.import-steps p { margin: 2px 0 0; font-size: 12.5px; color: var(--muted); }
+.import-step-num { flex: none; width: 26px; height: 26px; border-radius: 50%; background: var(--primary); color: #fff; font-size: 12px; font-weight: 800; display: grid; place-items: center; }
+.import-template-btn { width: 100%; margin-bottom: 12px; justify-content: center; }
+.import-summary-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
+.import-summary-row span { font-size: 13px; color: var(--ink); }
+.import-ok-count { color: #16a34a; }
+.import-error-count { color: #c22a2a; }
+.import-preview-table { display: flex; flex-direction: column; gap: 6px; }
+.import-preview-row { display: grid; grid-template-columns: 1.6fr 1.3fr 1fr .9fr .9fr 60px 40px; gap: 8px; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--soft-line); }
+.import-preview-head { font-size: 10.5px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); border-bottom: 1px solid var(--line); padding-bottom: 8px; }
+.import-preview-row.has-error { background: #fde8e8; border-radius: 8px; padding-left: 6px; padding-right: 6px; }
+html.app-dark .import-preview-row.has-error { background: #3a1f1f; }
+.import-row-errors { margin: -2px 0 6px; padding-left: 6px; font-size: 11.5px; color: #c22a2a; }
+.import-input { height: 36px; border: 1px solid var(--line); border-radius: 6px; padding: 0 8px; font-size: 12.5px; background: var(--surface); color: var(--ink); width: 100%; box-sizing: border-box; }
+@media (max-width: 900px) { .import-preview-row { grid-template-columns: 1fr; } .import-preview-head { display: none; } }
 
 .theme-switch {
   position: relative;

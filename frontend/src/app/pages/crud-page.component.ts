@@ -51,6 +51,11 @@ type CartaFilter = { categoryId: string; area: string; visible: string; priceRan
           <button mat-flat-button class="filter-action" (click)="load()" [disabled]="loading"><mat-icon>refresh</mat-icon>{{loading ? 'Cargando' : 'Actualizar'}}</button>
           <button mat-flat-button class="primary-action" (click)="openCreate()"><mat-icon>add</mat-icon>Nuevo Movimiento</button>
         </div>
+      } @else if (endpoint === 'carta' && cartaTab === 'plato') {
+        <div class="header-actions">
+          <button type="button" mat-stroked-button (click)="openImportWizard()"><mat-icon>upload_file</mat-icon>Cargar Carta Completa</button>
+          <button mat-flat-button class="primary-action" (click)="openCreate()"><mat-icon>add</mat-icon>Nuevo Plato</button>
+        </div>
       } @else {
         <button mat-flat-button class="primary-action" (click)="single ? openEdit(rows[0]) : openCreate()"><mat-icon>{{single ? 'edit' : 'add'}}</mat-icon>{{single ? (endpoint === 'company-settings' ? 'Editar Configuracion' : 'Editar') : (endpoint === 'products' ? 'Nuevo Producto' : (endpoint === 'carta' ? (cartaTab === 'plato' ? 'Nuevo Plato' : 'Nuevo Articulo') : (endpoint === 'warehouses' ? 'Nuevo Almacen' : (endpoint === 'users' ? 'Nuevo Usuario' : (endpoint === 'roles' ? 'Nuevo Rol' : 'Nuevo')))))}}</button>
       }
@@ -616,6 +621,60 @@ type CartaFilter = { categoryId: string; area: string; visible: string; priceRan
       <ng-template pTemplate="footer"><div class="modal-actions"><button mat-stroked-button (click)="closeModal()">Cancelar</button><button mat-flat-button class="primary-action" (click)="saveModal()"><mat-icon>save</mat-icon>Guardar</button></div></ng-template>
     </p-dialog>
 
+    <p-dialog [(visible)]="importWizardOpen" [modal]="true" [dismissableMask]="!importUploading && !importConfirming" [closable]="!importUploading && !importConfirming" [style]="{ width: importStep === 'preview' ? 'min(1100px, 96vw)' : 'min(560px, 94vw)' }" [contentStyle]="{ 'max-height': '72vh', overflow: 'auto' }" header="Cargar Carta Completa">
+      @if (importStep === 'instructions') {
+        <ol class="import-steps">
+          <li><span class="import-step-num">1</span><div><b>Descarga la plantilla</b><p>El Excel ya trae las columnas listas para tu carta.</p></div></li>
+          <li><span class="import-step-num">2</span><div><b>Completa tus platos</b><p>Un plato por fila: nombre, categoria, area, precio y costo.</p></div></li>
+          <li><span class="import-step-num">3</span><div><b>Sube el archivo</b><p>Arrastra o selecciona el mismo Excel ya lleno.</p></div></li>
+          <li><span class="import-step-num">4</span><div><b>Revisa y confirma</b><p>Corrige lo que necesites y confirma la carga.</p></div></li>
+        </ol>
+        <button type="button" mat-stroked-button class="import-template-btn" (click)="downloadImportTemplate()"><mat-icon>download</mat-icon>Descargar plantilla</button>
+        <button type="button" class="image-dropzone" [class.uploading]="importUploading" (click)="importFileInput.click()" (dragover)="onImportDragOver($event)" (drop)="onImportDrop($event)">
+          <mat-icon>cloud_upload</mat-icon>
+          <strong>{{importUploading ? 'Procesando...' : 'Click o arrastra tu Excel aqui'}}</strong>
+          <small>Archivos .xlsx o .xls</small>
+        </button>
+        <input #importFileInput type="file" accept=".xlsx,.xls" hidden (change)="onImportFileSelected($event)">
+      } @else {
+        <div class="import-summary-row">
+          <span>{{importPreviewRows.length}} filas &middot; <b class="import-ok-count">{{importValidCount()}} listas</b>@if (importErrorCount() > 0) { &middot; <b class="import-error-count">{{importErrorCount()}} con errores</b> }</span>
+          <button type="button" mat-stroked-button (click)="importStep = 'instructions'"><mat-icon>arrow_back</mat-icon>Subir otro archivo</button>
+        </div>
+        <div class="import-preview-table">
+          <div class="import-preview-row import-preview-head">
+            <span>Plato</span><span>Categoria</span><span>Area Prep.</span><span>Precio</span><span>Costo</span><span>Visible</span><span></span>
+          </div>
+          @for (r of importPreviewRows; track $index) {
+            <div class="import-preview-row" [class.has-error]="rowErrorMessages(r).length">
+              <input type="text" class="import-input" [(ngModel)]="r.name" placeholder="Nombre">
+              <input type="text" class="import-input" list="import-cat-options" [(ngModel)]="r.category_name" placeholder="Categoria">
+              <select class="import-input" [(ngModel)]="r.area_preparacion">
+                <option value="cocina">Cocina</option>
+                <option value="bar">Bar</option>
+              </select>
+              <input type="number" min="0" class="import-input" [(ngModel)]="r.sale_price">
+              <input type="number" min="0" class="import-input" [(ngModel)]="r.cost">
+              <label class="switch"><input type="checkbox" [(ngModel)]="r.active"><span class="switch-track"></span><span class="switch-thumb"></span></label>
+              <button type="button" mat-icon-button title="Quitar fila" (click)="removeImportRow($index)"><mat-icon>close</mat-icon></button>
+            </div>
+            @if (rowErrorMessages(r).length) { <div class="import-row-errors">{{rowErrorMessages(r).join(' - ')}}</div> }
+          }
+        </div>
+        <datalist id="import-cat-options">
+          @for (c of categoryOptions; track c.value) { <option [value]="c.label"></option> }
+        </datalist>
+      }
+      <ng-template pTemplate="footer">
+        <div class="modal-actions">
+          <button mat-stroked-button (click)="closeImportWizard()">Cancelar</button>
+          @if (importStep === 'preview') {
+            <button mat-flat-button class="primary-action" [disabled]="!importValidCount() || importConfirming" (click)="confirmImportCarta()"><mat-icon>check</mat-icon>{{importConfirming ? 'Cargando...' : 'Confirmar Carga'}}</button>
+          }
+        </div>
+      </ng-template>
+    </p-dialog>
+
     <app-pdf-preview-dialog [visible]="pdfPreviewVisible" [pdfUrl]="pdfPreviewUrl" [title]="pdfPreviewTitle" (visibleChange)="pdfPreviewVisible = $event" (closed)="onPdfPreviewClosed()" />
   </section>`
 })
@@ -657,6 +716,11 @@ export class CrudPageComponent implements OnInit {
   cartaFilterOpen = false;
   cartaFilterDraft: CartaFilter = { categoryId: '', area: '', visible: '', priceRange: [0, 200] };
   cartaFilterApplied: CartaFilter = { categoryId: '', area: '', visible: '', priceRange: [0, 200] };
+
+  // Carga masiva de Carta (Platos) via Excel
+  importWizardOpen = false; importStep: 'instructions' | 'preview' = 'instructions';
+  importUploading = false; importConfirming = false;
+  importPreviewRows: any[] = [];
   loadCartaStats() {
     this.api.get<any>('products-stats').subscribe(res => {
       this.cartaStats = { platosCount: Number(res?.platos_count || 0), articulosCount: Number(res?.articulos_count || 0) };
@@ -804,6 +868,70 @@ export class CrudPageComponent implements OnInit {
       this.warehouseOptions = warehouseRows.map((w: any) => ({ value: String(w.id), label: w.name }));
       this.lookupsLoaded = true;
       after?.();
+    });
+  }
+
+  // ---------- Carga masiva de Carta ----------
+  openImportWizard() {
+    this.importWizardOpen = true; this.importStep = 'instructions'; this.importPreviewRows = [];
+    this.loadProductLookups();
+  }
+  closeImportWizard() { this.importWizardOpen = false; }
+
+  onImportDragOver(event: DragEvent) { event.preventDefault(); }
+  onImportDrop(event: DragEvent) { event.preventDefault(); const file = event.dataTransfer?.files?.[0]; if (file) this.uploadImportFile(file); }
+  onImportFileSelected(event: Event) { const input = event.target as HTMLInputElement; const file = input.files?.[0]; if (file) this.uploadImportFile(file); input.value = ''; }
+
+  uploadImportFile(file: File) {
+    this.importUploading = true;
+    this.api.upload<{ rows: any[] }>('products/import-preview', file, 'file').subscribe({
+      next: (res) => {
+        this.importUploading = false;
+        this.importPreviewRows = (res.rows || []).map(r => ({ ...r, active: r.active !== false }));
+        this.importStep = 'preview';
+        this.cdr.detectChanges();
+      },
+      error: (err: any) => { this.importUploading = false; this.messages.add({ severity: 'error', summary: 'Error', detail: err?.error?.message || 'No se pudo procesar el archivo.' }); this.cdr.detectChanges(); }
+    });
+  }
+
+  removeImportRow(i: number) { this.importPreviewRows.splice(i, 1); }
+
+  rowErrorMessages(row: any): string[] {
+    const errors: string[] = [];
+    if (!String(row.name || '').trim()) errors.push('El nombre es obligatorio.');
+    if (!String(row.category_name || '').trim()) errors.push('La categoria es obligatoria.');
+    const salePrice = Number(row.sale_price);
+    if (row.sale_price === null || row.sale_price === '' || Number.isNaN(salePrice) || salePrice < 0) errors.push('El precio debe ser un numero valido.');
+    const cost = Number(row.cost);
+    if (row.cost === null || row.cost === '' || Number.isNaN(cost) || cost < 0) errors.push('El costo debe ser un numero valido.');
+    return errors;
+  }
+  importValidCount() { return this.importPreviewRows.filter(r => !this.rowErrorMessages(r).length).length; }
+  importErrorCount() { return this.importPreviewRows.length - this.importValidCount(); }
+
+  downloadImportTemplate() {
+    this.api.getBlob('products/import-template', {}).subscribe((blob: Blob) => {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = 'plantilla-carta.xlsx';
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+  }
+
+  confirmImportCarta() {
+    const validRows = this.importPreviewRows.filter(r => !this.rowErrorMessages(r).length);
+    if (!validRows.length || this.importConfirming) return;
+    this.importConfirming = true;
+    const rows = validRows.map(r => ({ name: r.name, category_name: r.category_name, area_preparacion: r.area_preparacion, sale_price: this.number(r.sale_price), cost: this.number(r.cost), active: !!r.active }));
+    this.api.post<any>('products/import-confirm', { rows }).subscribe({
+      next: (res: any) => {
+        this.importConfirming = false; this.importWizardOpen = false;
+        this.messages.add({ severity: 'success', summary: 'Carta cargada', detail: `${res.created} platos creados, ${res.updated} actualizados.` });
+        this.load();
+      },
+      error: (err: any) => { this.importConfirming = false; this.messages.add({ severity: 'error', summary: 'Error', detail: err?.error?.message || 'No se pudo cargar la carta.' }); }
     });
   }
   loadUserLookups(after?: () => void) {
